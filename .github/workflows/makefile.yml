@@ -16,6 +16,9 @@ jobs:
 
     - uses: egor00f/install-kolibrios-toolchain-action@v1.1
 
+    - name: kolibros repo
+      run: cd .. && git clone https://git.kolibrios.org/KolibriOS/kolibrios.git
+
     - name: Build
       run: cd src && make all
 
