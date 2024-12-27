@@ -4,7 +4,7 @@
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
 # Your platform. See PLATS for possible values.
-PLAT= guess
+PLAT= kolibrios
 
 # Where to install. The installation starts in the src and doc directories,
 # so take care if INSTALL_TOP is not an absolute path. See the local target.
@@ -35,9 +35,6 @@ RM= rm -f
 
 # == END OF USER SETTINGS -- NO NEED TO CHANGE ANYTHING BELOW THIS LINE =======
 
-# Convenience platforms targets.
-PLATS= guess aix bsd c89 freebsd generic ios linux linux-readline macosx mingw posix solaris
-
 # What to install.
 TO_BIN= lua luac
 TO_INC= lua.h luaconf.h lualib.h lauxlib.h lua.hpp
@@ -48,10 +45,8 @@ TO_MAN= lua.1 luac.1
 V= 5.4
 R= $V.7
 
-# Targets start here.
-all:	$(PLAT)
 
-$(PLATS) help test clean:
+help test clean:
 	@cd src && $(MAKE) $@
 
 install: dummy
@@ -101,6 +96,6 @@ pc:
 	@echo "includedir=$(INSTALL_INC)"
 
 # Targets that do not create files (not all makes understand .PHONY).
-.PHONY: all $(PLATS) help test clean install uninstall local dummy echo pc
+.PHONY: all help test clean install uninstall local dummy echo pc
 
 # (end of Makefile)

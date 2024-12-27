@@ -3,6 +3,7 @@
         "stdio.h": "c",
         "luaconf.h": "c",
         "lua.h": "c",
-        "lauxlib.h": "c"
+        "lauxlib.h": "c",
+        "string.h": "c"
     }
 }

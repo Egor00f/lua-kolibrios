@@ -4,7 +4,7 @@
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
 # Your platform. See PLATS for possible values.
-PLAT= guess
+PLAT= kolibrios
 
 
 
@@ -23,14 +23,18 @@ RM= rm -f
 UNAME= uname
 
 KOLIBRIOS_REPO=../../kolibrios
-TOOLCHAIN_PATH=C:/MinGW/msys/1.0/home/autobuild/tools/win32
+
+ifeq ($(OS),Windows_NT)
+	TOOLCHAIN_PATH=C:/MinGW/msys/1.0/home/autobuild/tools/win32
+else
+	TOOLCHAIN_PATH=/home/autobuild/tools/win32
+endif
+
 SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
 SYSLDFLAGS=-static -S -nostdlib --image-base 0 -Tapp-dynamic.lds -L$(SDK_DIR)/lib --subsystem native
 SYSLIBS=-lgcc -lc.dll
-#IC:/Users/yyari/Documents/KolibriOS/kolibrios/contrib/sdk/sources/newlib/libc/include
-#IC:/Users/yyari/Documents/KolibriOS/kolibrios/contrib/sdk/sources/newlib/libc/include
 MYCFLAGS=
 MYLDFLAGS=
 MYLIBS=
