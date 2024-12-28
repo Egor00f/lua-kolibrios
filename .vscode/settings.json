@@ -4,7 +4,9 @@
         "luaconf.h": "c",
         "lua.h": "c",
         "lauxlib.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "ksys.h": "c",
+        "lualib.h": "c"
     },
     "editor.formatOnSave": false
 }
