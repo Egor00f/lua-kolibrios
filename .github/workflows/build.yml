@@ -1,4 +1,4 @@
-name: Makefile CI
+name: Build
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: deb-package
+        name: build
         path: |
           ./src/lua
           ./src/luac
