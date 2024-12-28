@@ -33,7 +33,7 @@ endif
 SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
-SYSLDFLAGS=-static -S -nostdlib --image-base 0 -Tapp-dynamic.lds -L$(SDK_DIR)/lib
+SYSLDFLAGS=-static -S -nostdlib --image-base 0 -Tapp-dynamic.lds -L$(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L $(TOOLCHAIN_PATH)/mingw32/lib
 SYSLIBS=-lgcc -lc.dll
 MYCFLAGS=
 MYLDFLAGS=

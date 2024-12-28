@@ -5,5 +5,4 @@ For installation instructions, license details, and
 further information about Lua, see doc/readme.html.
 
 
-+ output only to debug board
-+ input not working
++ console input not working
