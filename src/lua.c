@@ -451,8 +451,8 @@ static int handle_luainit (lua_State *L) {
 
 #define lua_initreadline(L)  ((void)L)
 #define lua_readline(L,b,p) \
-        ((void)L, printf(p),  /* show prompt */ \
-        scanf(b) != NULL)  /* get line */
+        ((void)L, fputs(p, stdout), fflush(stdout),  /* show prompt */ \
+        fgets(b, LUA_MAXINPUT, stdin) != NULL)  /* get line */
 #define lua_saveline(L,line)	{ (void)L; (void)line; }
 #define lua_freeline(L,b)	{ (void)L; (void)b; }
 
