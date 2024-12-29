@@ -15,7 +15,9 @@
                 "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libdrm/include",
                 "${workspaceFolder}/../kolibrios/contrib/sdk/sources/zlib"
             ],
-            "defines": [],
+            "defines": [
+                "ENABLE_SYSCALLS"
+            ],
             "cStandard": "gnu99",
             "cppStandard": "gnu++14",
             "compilerPath": "C:/MinGW/msys/1.0/home/autobuild/tools/win32/bin/kos32-g++.exe",
@@ -53,7 +55,9 @@
                 "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libdrm/include",
                 "${workspaceFolder}/../kolibrios/contrib/sdk/sources/zlib"
             ],
-            "defines": [],
+            "defines": [
+                "ENABLE_SYSCALLS"
+            ],
             "cStandard": "gnu99",
             "cppStandard": "gnu++14",
             "compilerPath": "/home/autobuild/tools/win32/bin/kos32-gcc"

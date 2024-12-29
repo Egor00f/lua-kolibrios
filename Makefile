@@ -46,7 +46,7 @@ V= 5.4
 R= $V.7
 
 
-help test clean:
+all help test clean:
 	@cd src && $(MAKE) $@
 
 install: dummy

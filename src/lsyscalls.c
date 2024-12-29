@@ -2,14 +2,13 @@
     syscalls
 */
 
-
-#ifndef __lsyscalls_h__
-#define __lsyscalls_h__
+#ifdef ENABLE_SYSCALLS
 
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 
+#include <string.h>
 #include <stdlib.h>
 #include <sys/ksys.h>
 
@@ -96,52 +95,59 @@ static int syscalls_drawPixel(lua_State *L)
 
 static int syscalls_threadInfo(lua_State *L)
 {
-    ksys_thread_t *t = malloc(sizeof(ksys_thread_t));
+    ksys_thread_t t;
     
-    _ksys_thread_info(t, luaL_checkinteger(L, 1));
+    _ksys_thread_info(&t, luaL_checkinteger(L, 1));
 
     lua_createtable(L, 0, 13);
 
-    lua_pushstring(L, t->name);
+    lua_pushstring(L, t.name);
     lua_setfield(L, -2, "name");
 
-    lua_pushnumber(L, t->cpu_usage);
+    lua_pushnumber(L, t.cpu_usage);
     lua_setfield(L, -2, "cpu_usage");
 
-    lua_pushnumber(L, t->memused);
+    lua_pushnumber(L, t.memused);
     lua_setfield(L, -2, "memused");
     
-    lua_pushnumber(L, t->pid);
+    lua_pushnumber(L, t.pid);
     lua_setfield(L, -2, "pid");
 
-    lua_pushnumber(L, t->key_input_mode);
+    lua_pushnumber(L, t.key_input_mode);
     lua_setfield(L, -2, "keyInputMode");
 
-    lua_pushnumber(L, t->pos_in_window_stack);
+    lua_pushnumber(L, t.pos_in_window_stack);
     lua_setfield(L, -2, "posInWindowStack");
 
-    lua_pushnumber(L, t->slot_num_window_stack);
+    lua_pushnumber(L, t.slot_num_window_stack);
     lua_setfield(L, -2, "slotNumWindowStack");
     
-    lua_pushnumber(L, t->slot_state);
+    lua_pushnumber(L, t.slot_state);
     lua_setfield(L, -2, "slotState");
 
-    lua_pushnumber(L, t->window_state);
+    lua_pushnumber(L, t.window_state);
     lua_setfield(L, -2, "windowState");
 
-    lua_pushnumber(L, t->winx_size);
+    lua_pushnumber(L, t.winx_size);
     lua_setfield(L, -2, "winXSize");
 
-    lua_pushnumber(L, t->winy_size);
+    lua_pushnumber(L, t.winy_size);
     lua_setfield(L, -2, "winYSize");
 
-    lua_pushnumber(L, t->winx_start);
+    lua_pushnumber(L, t.winx_start);
     lua_setfield(L, -2, "winXPos");
 
-    lua_pushnumber(L, t->winy_start);
+    lua_pushnumber(L, t.winy_start);
     lua_setfield(L, -2, "winYPos");
 
     return 1;
+}
+
+static int syscalls_KillBySlot(lua_State *L)
+{
+    _ksys_kill_by_slot(luaL_checkinteger(L, 1));
+
+    return 0;
 }
 
 static int syscalls_waitEvent(lua_State *L)
@@ -366,7 +372,7 @@ static int syscalls_getKey(lua_State *L)
     }
     else if(a.state == 0) 
     {
-        char* s[2];
+        char s[2];
         s[0] = a.code;
         s[1] = '\n';
         lua_pushstring(L, s);
@@ -425,6 +431,10 @@ static int syscalls_setHotkey(lua_State *L)
     lua_pushnumber(L, _ksys_set_sys_hotkey(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2)));
     return 1;
 }
+
+/* 
+    Mouse Funcs
+*/
 
 static int syscalls_getMousePositionScreen(lua_State *L)
 {
@@ -535,30 +545,143 @@ static int syscalls_getMouseEvents(lua_State *L)
     return 1;
 }
 
-/* static int syscalls_setMouseSettings()
+inline uint32_t getMouseSettings(ksys_mouse_settings_t settings)
 {
-    _ksys_set_mouse_settings();
-} */
+    uint32_t result;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(result)
+        : "a"(18), "b"(19), "c"(settings)
+        : "memory");
+
+    return result;
+}
+
+static int syscalls_GetMouseSpeed(lua_State *L)
+{
+    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SPEED));
+
+    return 1;
+}
+
+static int syscalls_GetMouseSens(lua_State *L)
+{
+    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SENS));
+
+    return 1;
+}
+
+static int syscalls_GetMouseDoubleClickDelay(lua_State *L)
+{
+    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY));
+
+    return 1;
+}
+
+static int syscalls_GetMouseSettings(lua_State *L)
+{
+    lua_createtable(L, 0, 3);
+
+    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SPEED));
+    lua_setfield(L, -2, "speed");
+
+    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SENS));
+    lua_setfield(L, -2, "sensetivity");
+
+    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY));
+    lua_setfield(L, -2, "doubleClickDelay");
+
+    return 1;
+}
+
+static int syscalls_MouseSimulateState(lua_State *L)
+{
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    _ksys_set_mouse_settings(
+        KSYS_MOUSE_SIM_STATE, 
+        (lua_getfield(L, 1, "Button5") << 4) |
+        (lua_getfield(L, 1, "Button4") << 3) |
+        (lua_getfield(L, 1, "midleButton") << 2) | 
+        (lua_getfield(L, 1, "rightButton") << 1) | 
+        lua_getfield(L, 1, "leftButton")
+    );
+
+    return 1;
+}
+
+static int syscalls_SetMouseSpeed(lua_State *L)
+{
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_SPEED, luaL_checkinteger(L, 1));
+
+    return 0;
+}
+
+static int syscalls_SetMouseSens(lua_State *L)
+{
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_SENS, luaL_checkinteger(L, 1));
+
+    return 0;
+}
+
+static int syscalls_SetMousePos(lua_State *L)
+{
+    _ksys_set_mouse_pos(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2));
+
+    return 0;
+}
+
+static int syscalls_SetMouseDoubleClickDelay(lua_State *L)
+{
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_DOUBLE_CLICK_DELAY, luaL_checkinteger(L, 1));
+
+    return 0;
+}
+
+static int syscalls_SetMouseSettings(lua_State *L)
+{
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    _ksys_set_mouse_settings(KSYS_MOUSE_GET_SPEED, lua_getfield(L, 1, "Speed"));
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_SENS, lua_getfield(L, 1, "Sens"));
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_DOUBLE_CLICK_DELAY, lua_getfield(L, 1, "DoubleClickDelay"));
+
+    return 0;
+}
+
+
+
+
 
 /*
 ** functions for 'syscalls' library
 */
 static const luaL_Reg syscallsLib[] = {
+    /* Window funcs */
     {"createWindow", syscalls_createWindow},
     {"startRedraw", syscalls_startRedraw},
     {"endRedraw", syscalls_endRedraw},
+    {"getSkinHeight", syscalls_getSkinHeight},
     {"changeWindow", syscalls_changeWindow},
     {"focusWindow", syscalls_focusWindow},
     {"unfocusWindow", syscalls_unfocusWindow},
+    {"setWindowTitle", syscalls_setWindowTitle},
+    /* Buttons funcs*/
     {"defineButton", syscalls_defineButton},
     {"deleteButton", syscalls_deletebutton},
     {"getButton", syscalls_getButton},
+    /* Events funcs */
     {"waitEvent", syscalls_waitEvent},
     {"checkEvent", syscalls_checkEvent},
     {"waitEventTimeout", syscalls_waitEventTimeout},
+    /* Background funcs */
     {"backgroundSetSize", syscalls_backgroundSetSize},
     {"backgroundPutPixel", syscalls_backgroundPutPixel},
     {"backgroundRedraw", syscalls_backgroundRedraw},
+    /* system funcs */
     {"getRamSize", syscalls_getRamSize},
     {"getFreeRam", syscalls_getFreeRam},
     {"getCPUClock", syscalls_getCPUClock},
@@ -566,22 +689,35 @@ static const luaL_Reg syscallsLib[] = {
     {"shutdownReboot", syscalls_shutdownReboot},
     {"shutdownRestartKernel", syscalls_shutdownRestartKRN},
     {"getSystemColors", syscalls_getSystemColors},
+    {"screenSize", syscalls_screenSize},
+    /* Draw funcs*/
     {"drawLine", syscalls_drawLine},
     {"drawPixel", syscalls_drawPixel},
     {"drawText", syscalls_drawText},
     {"drawRectangle", syscalls_drawRectangle},
-    {"getSkinHeight", syscalls_getSkinHeight},
+    /* keyboard funcs */
     {"setKeyInputMode", syscalls_setKeyInputMode},
     {"getKey", syscalls_getKey},
     {"getControlKeyState", syscalls_getControlKeyState},
-    {"setWindowTitle", syscalls_setWindowTitle},
-    {"screenSize", syscalls_screenSize},
+    /* Threads funcs */
     {"threadInfo", syscalls_threadInfo},
+    {"killBySlot", syscalls_KillBySlot},
+    /* Mouse funcs */
     {"getMouseButtons", syscalls_getMouseButtons},
     {"getMouseEvents", syscalls_getMouseEvents},
     {"getMousePositionScreen", syscalls_getMousePositionScreen},
     {"getMousePositionWindow", syscalls_getMousePositionWindow},
     {"getMouseWheels", syscalls_getMouseWheels},
+    {"GetMouseSpeed", syscalls_GetMouseSpeed},
+    {"GetMouseSens", syscalls_GetMouseSens},
+    {"GetMouseDoubleClickDelay", syscalls_GetMouseDoubleClickDelay},
+    {"GetMouseSettings", syscalls_GetMouseSettings},
+    {"MouseSimulateState", syscalls_MouseSimulateState},
+    {"SetMouseSpeed", syscalls_SetMouseSpeed},
+    {"SetMouseSens", syscalls_SetMouseSens},
+    {"SetMousePos", syscalls_SetMousePos},
+    {"SetMouseDoubleClickDelay", syscalls_SetMouseDoubleClickDelay},
+    {"SetMouseSettings", syscalls_SetMouseSettings},
     {NULL, NULL}};
 
 void syscalls_add_events(lua_State *L)
@@ -866,11 +1002,11 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 
-    syscalls_add_events(L);    
+    syscalls_add_events(L);
     syscalls_add_slotStates(L);
     syscalls_add_scancodes(L);
 
     return 1;
 }
 
-#endif // __lsyscalls_h__
+#endif // ENABLE_SYSCALLS

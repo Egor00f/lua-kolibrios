@@ -33,7 +33,7 @@ endif
 SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
-SYSLDFLAGS=-static -S -nostdlib --image-base 0 -Tapp-dynamic.lds -L$(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L $(TOOLCHAIN_PATH)/mingw32/lib
+SYSLDFLAGS=-S -nostdlib --image-base 0 -Tapp-dynamic.lds -L$(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib
 SYSLIBS=-lgcc -lc.dll
 MYCFLAGS=
 MYLDFLAGS=
@@ -49,7 +49,7 @@ PLATS= c89
 
 LUA_A=	liblua.a
 CORE_O=	lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o lundump.o lvm.o lzio.o
-LIB_O=	lauxlib.o lbaselib.o lcorolib.o ldblib.o liolib.o lmathlib.o loadlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o linit.o lsyscals.o
+LIB_O=	lauxlib.o lbaselib.o lcorolib.o ldblib.o liolib.o lmathlib.o loadlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o linit.o lsyscalls.o
 BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
 
 LUA_T=	lua
@@ -204,6 +204,6 @@ lvm.o: lvm.c lprefix.h lua.h luaconf.h ldebug.h lstate.h lobject.h \
  ltable.h lvm.h ljumptab.h
 lzio.o: lzio.c lprefix.h lua.h luaconf.h llimits.h lmem.h lstate.h \
  lobject.h ltm.h lzio.h
-lsyscals.o: lsyscals.c lua.h lualib.h lauxlib.h
+lsyscalls.o: lsyscalls.c lua.h lualib.h lauxlib.h
 
 # (end of Makefile)
