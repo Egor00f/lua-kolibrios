@@ -19,14 +19,29 @@ jobs:
     - name: kolibros repo
       run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
 
-    - name: Build
+    - name: static Build
       run: cd src && make all
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: build
+        name: static-build
         path: |
           ./src/lua
           ./src/luac
           ./src/liblua.a
+
+    - name: Clean
+      run: make clean
+
+    - name: shared Build
+      run: cd ${GITHUB_WORKSPACE}/src && make shared
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: static-build
+        path: |
+          ./src/lua
+          ./src/luac
+          ./src/lua54.obj
