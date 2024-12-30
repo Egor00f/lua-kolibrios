@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  static-build:
 
     runs-on: ubuntu-latest
 
@@ -31,17 +31,25 @@ jobs:
           ./src/luac
           ./src/liblua.a
 
-    - name: Clean
-      run: make clean
+  shared-build:
+    runs-on: ubuntu-latest
 
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: egor00f/install-kolibrios-toolchain-action@v1.1
+
+    - name: kolibros repo
+      run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
     - name: shared Build
-      run: cd ${GITHUB_WORKSPACE}/src && make shared
+      run: cd src && make shared
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: static-build
+        name: shared-build
         path: |
           ./src/lua
           ./src/luac
           ./src/lua54.obj
+    
