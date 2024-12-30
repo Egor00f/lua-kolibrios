@@ -3,8 +3,7 @@
 */
 
 
-#ifndef __lsyscalls_h__
-#define __lsyscalls_h__
+#ifdef LUA_ENABLE_SYSCALLS
 
 #include "lua.h"
 #include "lualib.h"
@@ -416,4 +415,4 @@ LUAMOD_API int luaopen_syscalls(lua_State *L)
     return 1;
 }
 
-#endif // __lsyscalls_h__
+#endif // LUA_ENABLE_SYSCALLS
