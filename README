@@ -4,6 +4,11 @@ This is port for KolibriOS of Lua 5.4.7
 For installation instructions, license details, and
 further information about Lua, see doc/readme.html.
 
+## Build
 
-+ interactive mod not working
+if you not need in syscalls, you can delete `-DENABLE_SYSCALLS` from `src/Makefile`
 
+build:
+```
+make all
+```
