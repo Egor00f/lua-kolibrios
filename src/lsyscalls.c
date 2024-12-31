@@ -2,8 +2,6 @@
     syscalls
 */
 
-#ifdef ENABLE_SYSCALLS
-
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -1008,5 +1006,3 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
 
     return 1;
 }
-
-#endif // ENABLE_SYSCALLS
