@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  static-build:
 
     runs-on: ubuntu-latest
 
@@ -19,14 +19,37 @@ jobs:
     - name: kolibros repo
       run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
 
-    - name: Build
-      run: cd src && make all
+    - name: static Build
+      run: cd src && make static
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: build
+        name: static-build
         path: |
           ./src/lua
           ./src/luac
           ./src/liblua.a
+
+  shared-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: egor00f/install-kolibrios-toolchain-action@v1.1
+
+    - name: kolibros repo
+      run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
+    - name: shared Build
+      run: cd src && make shared
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: shared-build
+        path: |
+          ./src/lua
+          ./src/luac
+          ./src/lua54.obj
+    

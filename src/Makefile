@@ -33,8 +33,8 @@ endif
 SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
-SYSLDFLAGS=-S -nostdlib --image-base 0 -Tapp-dynamic.lds -L$(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib
-SYSLIBS=-lgcc -lc.dll
+SYSLDFLAGS=--image-base 0 -Tapp-dynamic.lds
+SYSLIBS=-nostdlib -L$(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
 MYCFLAGS=
 MYLDFLAGS=
 MYLIBS=
@@ -61,29 +61,53 @@ LUAC_O=	luac.o
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
+ALL_S= $(LUA_S)
 
-# Targets start here.
-default: $(PLAT)
+default: all
 
-all:	$(ALL_T)
+all: $(LUA_A) shared
 
 o:	$(ALL_O)
 
 a:	$(ALL_A)
 
+# Static lib
 $(LUA_A): $(BASE_O)
+
 	$(AR) $@ $(BASE_O)
+	
 	$(RANLIB) $@
 
+# static lua
 $(LUA_T): $(LUA_O) $(LUA_A)
 	$(LD) $(LDFLAGS) -o $@ $(LUA_O) $(LUA_A) $(LIBS) 
 	$(STRIP) -S $@
 	$(OBJCOPY) $@ -O binary
 
+# static luac
 $(LUAC_T): $(LUAC_O) $(LUA_A)
 	$(LD) $(LDFLAGS) -o $@ $(LUAC_O) $(LUA_A) $(LIBS)
 	$(STRIP) -S $@
 	$(OBJCOPY) $@ -O binary
+
+# Shared lib
+$(LUA_S): $(BASE_O)
+
+	$(CC) -shared -o $@ $(BASE_O) $(SYSLIBS)
+	$(STRIP) --strip-unneeded $@ $(BASE_O)
+
+# shared lua
+$(LUA_T_S): $(LUA_O) $(LUA_S)
+	$(LD) $(LDFLAGS) -o $@ $(LUA_O) $(LUA_S) $(LIBS) 
+	$(STRIP) -S $@
+	$(OBJCOPY) $@ -O binary
+
+static: $(ALL_T)
+
+shared: 
+	$(MAKE) "MYCFLAGS=$(MYCFLAGS) -DLUA_BUILD_AS_DLL" "MYLDFLAGS=$(MYLDFLAGS) -s" \
+	"LUA_S=lua54.obj" "LUA_T_S=lua" lua
+	$(MAKE) "LUAC_T=luac" luac
 
 test:
 	./$(LUA_T) -v

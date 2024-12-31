@@ -2,6 +2,7 @@
     syscalls
 */
 
+
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -137,7 +138,7 @@ static int syscalls_threadInfo(lua_State *L)
 
     lua_pushnumber(L, t.winy_start);
     lua_setfield(L, -2, "winYPos");
-
+  
     return 1;
 }
 
@@ -302,6 +303,8 @@ static int syscalls_drawRectangle(lua_State *L)
         luaL_checkinteger(L, 3),
         luaL_checkinteger(L, 4),
         luaL_checkinteger(L, 5));
+        luaL_checkinteger(L, 5)
+    );
 
     return 0;
 }
@@ -649,8 +652,6 @@ static int syscalls_SetMouseSettings(lua_State *L)
 
     return 0;
 }
-
-
 
 
 
@@ -1003,6 +1004,14 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
     syscalls_add_events(L);
     syscalls_add_slotStates(L);
     syscalls_add_scancodes(L);
+
+    return 1;
+}
+
+
+LUAMOD_API int luaopen_syscalls(lua_State *L)
+{
+    luaL_newlib(L, syscallsLib);
 
     return 1;
 }
