@@ -7,6 +7,7 @@
         "string.h": "c",
         "ksys.h": "c",
         "lualib.h": "c",
+        "lprefix.h": "c"
     },
     "editor.formatOnSave": false,
 }

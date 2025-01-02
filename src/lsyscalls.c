@@ -2,11 +2,15 @@
     syscalls
 */
 
+
 #ifdef LUA_ENABLE_SYSCALLS
 
+#include <string.h>
+
+#include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
-#include <string.h>
+
 
 #include <sys/ksys.h>
 

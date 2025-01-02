@@ -30,16 +30,6 @@
 #endif				/* } */
 
 
-/*
-** Windows stuff
-*/
-#if defined(_WIN32)	/* { */
-
-#if !defined(_CRT_SECURE_NO_WARNINGS)
-#define _CRT_SECURE_NO_WARNINGS  /* avoid warnings about ISO C functions */
-#endif
-
-#endif			/* } */
 
 #endif
 

@@ -37,7 +37,7 @@ SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
 SYSLDFLAGS=--image-base 0 -Tapp-dynamic.lds
-SYSLIBS=-nostdlib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
+SYSLIBS=-nostdlib -L $(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
 MYCFLAGS=-DLUA_ENABLE_SYSCALLS
 MYLDFLAGS=
 MYLIBS=
@@ -92,6 +92,7 @@ $(LUAC_T): $(LUAC_O) $(LUA_A)
 # Shared lib
 $(LUA_S): $(BASE_O)
 	$(CC) -shared -o $@ $(BASE_O) $(SYSLIBS)
+	$(STRIP) --strip-unneeded $@ $(BASE_O)
 
 # shared lua
 $(LUA_T_S): $(LUA_O) $(LUA_S)
@@ -102,7 +103,7 @@ $(LUA_T_S): $(LUA_O) $(LUA_S)
 static: $(ALL_T)
 
 shared: 
-	$(MAKE) "MYCFLAGS=$(MYCFLAGS) -DLUA_BUILD_AS_DLL" "MYLDFLAGS=$(MYLDFLAGS) -s" \
+	$(MAKE) "MYLDFLAGS=$(MYLDFLAGS) -s" \
 	"LUA_S=lua54.dll" "LUA_T_S=lua" lua
 	$(MAKE) "LUAC_T=luac" luac
 

@@ -16,7 +16,8 @@
                 "${workspaceFolder}/../kolibrios/contrib/sdk/sources/zlib"
             ],
             "defines": [
-                "LUA_ENABLE_SYSCALLS"
+                "LUA_ENABLE_SYSCALLS",
+                "LUA_BUILD_AS_DLL"
             ],
             "cStandard": "gnu99",
             "cppStandard": "gnu++14",
