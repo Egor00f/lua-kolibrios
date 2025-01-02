@@ -37,11 +37,11 @@ SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
 SYSLDFLAGS=--image-base 0 -Tapp-dynamic.lds
-SYSLIBS=-nostdlib $(SDK_DIR)/bin/libc.dll -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -ldll
-MYCFLAGS=
+SYSLIBS=-nostdlib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
+MYCFLAGS=-DLUA_ENABLE_SYSCALLS
 MYLDFLAGS=
 MYLIBS=
-MYOBJS=
+MYOBJS=lsyscalls.o
 
 # Special flags for compiler modules; -Os reduces code size.
 CMCFLAGS= 
@@ -61,14 +61,12 @@ LUA_O=	lua.o
 LUAC_T=	luac
 LUAC_O=	luac.o
 
-ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O) lsyscalls.o
+ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
-ALL_S= $(LUA_S) lsyscalls.obj $(LUA_S)
+ALL_S= $(LUA_S)  $(LUA_S)
 
-default: all
-
-all: shared lsyscalls.obj
+default: shared
 
 o:	$(ALL_O)
 
@@ -97,22 +95,16 @@ $(LUA_S): $(BASE_O)
 
 # shared lua
 $(LUA_T_S): $(LUA_O) $(LUA_S)
-	
 	$(LD) $(LDFLAGS) -o $@ $(LUA_O) $(LUA_S) $(LIBS) 
 	$(STRIP) -S $@
 	$(OBJCOPY) $@ -O binary
-
 
 static: $(ALL_T)
 
 shared: 
 	$(MAKE) "MYCFLAGS=$(MYCFLAGS) -DLUA_BUILD_AS_DLL" "MYLDFLAGS=$(MYLDFLAGS) -s" \
-	"LUA_S=lua54.obj" "LUA_T_S=lua" lua
+	"LUA_S=lua54.dll" "LUA_T_S=lua" lua
 	$(MAKE) "LUAC_T=luac" luac
-
-lsyscalls.obj: lsyscalls.o $(LUA_S)
-
-	$(CC) -shared -o lsyscalls.dll lsyscalls.o lua54.obj $(SYSLIBS)
 
 test:
 	./$(LUA_T) -v

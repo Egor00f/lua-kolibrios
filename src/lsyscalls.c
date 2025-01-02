@@ -2,12 +2,14 @@
     syscalls
 */
 
+#ifdef LUA_ENABLE_SYSCALLS
 
-#include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
+#include <string.h>
 
 #include <sys/ksys.h>
+
 
 static int syscalls_createWindow(lua_State *L)
 {
@@ -26,7 +28,12 @@ static int syscalls_createWindow(lua_State *L)
 
 static int syscalls_changeWindow(lua_State *L)
 {
-    _ksys_change_window(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4));
+    _ksys_change_window(
+        luaL_checkinteger(L, 1), 
+        luaL_checkinteger(L, 2), 
+        luaL_checkinteger(L, 3), 
+        luaL_checkinteger(L, 4)
+    );
 
     return 0;
 }
@@ -994,7 +1001,7 @@ void syscalls_add_hotkey_states(lua_State *L)
     
 }
 
-LUALIB_API int luaopen_lsyscalls(lua_State *L)
+LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 
@@ -1004,3 +1011,5 @@ LUALIB_API int luaopen_lsyscalls(lua_State *L)
 
     return 1;
 }
+
+#endif // LUA_ENABLE_SYSCALLS
