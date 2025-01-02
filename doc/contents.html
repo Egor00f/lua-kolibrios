@@ -11,7 +11,7 @@
 
 <H1>
 <A HREF="https://www.lua.org/"><IMG SRC="logo.gif" ALT="Lua"></A>
-Lua 5.4 Reference Manual
+KolibriOS Lua 5.4 Reference Manual
 </H1>
 
 <P>
@@ -131,6 +131,7 @@ Freely available under the terms of the
 <LI><A HREF="manual.html#6.8">6.8 &ndash; Input and Output Facilities</A>
 <LI><A HREF="manual.html#6.9">6.9 &ndash; Operating System Facilities</A>
 <LI><A HREF="manual.html#6.10">6.10 &ndash; The Debug Library</A>
+<LI><A HREF="manual.html#6.11">6.11 &ndash; Syscalls</A></LI>
 </UL>
 <P>
 <LI><A HREF="manual.html#7">7 &ndash; Lua Standalone</A>
@@ -234,9 +235,7 @@ Freely available under the terms of the
 <A HREF="manual.html#pdf-file:setvbuf">file:setvbuf</A><BR>
 <A HREF="manual.html#pdf-file:write">file:write</A><BR>
 
-</TD>
-<TD>
-<H3>&nbsp;</H3>
+
 <P>
 <A HREF="manual.html#6.7">math</A><BR>
 <A HREF="manual.html#pdf-math.abs">math.abs</A><BR>
@@ -280,6 +279,10 @@ Freely available under the terms of the
 <A HREF="manual.html#pdf-os.setlocale">os.setlocale</A><BR>
 <A HREF="manual.html#pdf-os.time">os.time</A><BR>
 <A HREF="manual.html#pdf-os.tmpname">os.tmpname</A><BR>
+
+</TD>
+<TD>
+<H3>&nbsp;</H3>
 
 <P>
 <A HREF="manual.html#6.3">package</A><BR>
@@ -330,6 +333,64 @@ Freely available under the terms of the
 <A HREF="manual.html#pdf-utf8.codes">utf8.codes</A><BR>
 <A HREF="manual.html#pdf-utf8.len">utf8.len</A><BR>
 <A HREF="manual.html#pdf-utf8.offset">utf8.offset</A><BR>
+
+<P>
+<A HREF="manual.html#6.11">Syscalls</A><BR>
+    
+<A HREF="manual.html#Syscalls.createWindow">Syscalls.createWindow</A><BR>
+<A HREF="manual.html#Syscalls.startRedraw">Syscalls.startRedraw</A><BR>
+<A HREF="manual.html#Syscalls.endRedraw">Syscalls.endRedraw</A><BR>
+<A HREF="manual.html#Syscalls.changeWindow">Syscalls.changeWindow</A><BR>
+<A HREF="manual.html#Syscalls.unfocusWindow">Syscalls.unfocusWindow</A><BR>
+<A HREF="manual.html#Syscalls.setWindowTitle">Syscalls.setWindowTitle</A><BR>
+
+<A HREF="manual.html#Syscalls.defineButton">Syscalls.defineButton</A><BR>
+<A HREF="manual.html#Syscalls.deleteButton">Syscalls.deleteButton</A><BR>
+<A HREF="manual.html#Syscalls.getButton">Syscalls.getButton</A><BR>
+
+<A HREF="manual.html#Syscalls.waitEvent">Syscalls.waitEvent</A><BR>
+<A HREF="manual.html#Syscalls.checkEvent">Syscalls.checkEvent</A><BR>
+<A HREF="manual.html#Syscalls.waitEventTimeout">Syscalls.waitEventTimeout</A><BR>
+
+<A HREF="manual.html#Syscalls.backgroundSetSize">Syscalls.backgroundSetSize</A><BR>
+<A HREF="manual.html#Syscalls.backgroundPutPixel">Syscalls.backgroundPutPixel</A><BR>
+<A HREF="manual.html#Syscalls.backgroundRedraw">Syscalls.backgroundRedraw</A><BR>
+
+<A HREF="manual.html#Syscalls.getRamSize">Syscalls.getRamSize</A><BR>
+<A HREF="manual.html#Syscalls.getFreeRam">Syscalls.getFreeRam</A><BR>
+<A HREF="manual.html#Syscalls.getCPUClock">Syscalls.getCPUClock</A><BR>
+<A HREF="manual.html#Syscalls.shutdownPowerOff">Syscalls.shutdownPowerOff</A><BR>
+<A HREF="manual.html#Syscalls.shutdownReboot">Syscalls.shutdownReboot</A><BR>
+<A HREF="manual.html#Syscalls.shutdownRestartKernel">Syscalls.shutdownRestartKernel</A><BR>
+<A HREF="manual.html#Syscalls.getSystemColors">Syscalls.getSystemColors</A><BR>
+<A HREF="manual.html#Syscalls.screenSize">Syscalls.screenSize</A><BR>
+<A HREF="manual.html#Syscalls.drawLine">Syscalls.drawLine</A><BR>
+<A HREF="manual.html#Syscalls.drawPixel">Syscalls.drawPixel</A><BR>
+<A HREF="manual.html#Syscalls.drawText">Syscalls.drawText</A><BR>
+<A HREF="manual.html#Syscalls.drawRectangle">Syscalls.drawRectangle</A><BR>
+<A HREF="manual.html#Syscalls.setKeyInputMode">Syscalls.setKeyInputMode</A><BR>
+<A HREF="manual.html#Syscalls.getKey">Syscalls.getKey</A><BR>
+<A HREF="manual.html#Syscalls.getControlKeyState">Syscalls.getControlKeyState</A><BR>
+
+<A HREF="manual.html#Syscalls.threadInfo">Syscalls.threadInfo</A><BR>
+<A HREF="manual.html#Syscalls.killBySlot">Syscalls.killBySlot</A><BR>
+
+<A HREF="manual.html#Syscalls.getMouseButtons">Syscalls.getMouseButtons</A><BR>
+<A HREF="manual.html#Syscalls.getMouseEvents">Syscalls.getMouseEvents</A><BR>
+<A HREF="manual.html#Syscalls.getMousePositionScreen">Syscalls.getMousePositionScreen</A><BR>
+<A HREF="manual.html#Syscalls.getMousePositionWindow">Syscalls.getMousePositionWindow</A><BR>
+<A HREF="manual.html#Syscalls.GetMouseSpeed">Syscalls.GetMouseSpeed</A><BR>
+<A HREF="manual.html#Syscalls.GetMouseSens">Syscalls.GetMouseSens</A><BR>
+<A HREF="manual.html#Syscalls.GetMouseDoubleClickDelay">Syscalls.GetMouseDoubleClickDelay</A><BR>
+<A HREF="manual.html#Syscalls.GetMouseSettings">Syscalls.GetMouseSettings</A><BR>
+<A HREF="manual.html#Syscalls.MouseSimulateState">Syscalls.MouseSimulateState</A><BR>
+<A HREF="manual.html#Syscalls.SetMouseSpeed">Syscalls.SetMouseSpeed</A><BR>
+<A HREF="manual.html#Syscalls.SetMouseSens">Syscalls.SetMouseSens</A><BR>
+<A HREF="manual.html#Syscalls.SetMousePos">Syscalls.SetMousePos</A><BR>
+<A HREF="manual.html#Syscalls.SetMouseDoubleClickDelay">Syscalls.SetMouseDoubleClickDelay</A><BR>
+<A HREF="manual.html#Syscalls.SetMouseSettings">Syscalls.SetMouseSettings</A><BR>
+
+</P>
 
 <H3><A NAME="metamethods">metamethods</A></H3>
 <P>

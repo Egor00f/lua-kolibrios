@@ -30,7 +30,7 @@ tt, kbd, code {
 
 <H1>
 <A HREF="https://www.lua.org/"><IMG SRC="logo.gif" ALT="Lua"></A>
-Welcome to Lua 5.4
+Welcome to KolibriOS Lua 5.4
 </H1>
 
 <DIV CLASS="menubar">
@@ -45,9 +45,9 @@ Welcome to Lua 5.4
 <A HREF="contents.html">reference manual</A>
 </DIV>
 
-<H2><A NAME="about">About Lua</A></H2>
+<H2><A NAME="about">About KolibriOS Lua</A></H2>
 <P>
-Lua is a powerful, efficient, lightweight, embeddable scripting language
+KolibriOS Lua port of lua, a powerful, efficient, lightweight, embeddable scripting language
 developed by a
 <A HREF="https://www.lua.org/authors.html">team</A>
 at
@@ -120,15 +120,8 @@ The <TT>Makefile</TT> there controls both the build process and the installation
   The platforms currently supported are:
 <P>
 <P CLASS="display">
-   guess aix bsd c89 freebsd generic ios linux linux-readline macosx mingw posix solaris
+   shared static
 </P>
-<P>
-  If your platform is listed, just do "<KBD>make xxx</KBD>", where xxx
-  is your platform name.
-<P>
-  If your platform is not listed, try the closest one or posix, generic,
-  c89, in this order.
-<P>
 <LI>
 The compilation takes only a few moments
 and produces three files in the <TT>src</TT> directory:
@@ -231,7 +224,7 @@ then try "<KBD>make linux-readline MYLIBS=-ltermcap</KBD>".
 library:
 <DD>
 lapi.c lcode.c lctype.c ldebug.c ldo.c ldump.c lfunc.c lgc.c llex.c lmem.c lobject.c lopcodes.c lparser.c lstate.c lstring.c ltable.c ltm.c lundump.c lvm.c lzio.c
-lauxlib.c lbaselib.c lcorolib.c ldblib.c liolib.c lmathlib.c loadlib.c loslib.c lstrlib.c ltablib.c lutf8lib.c linit.c
+lauxlib.c lbaselib.c lcorolib.c ldblib.c liolib.c lmathlib.c loadlib.c loslib.c lstrlib.c ltablib.c lutf8lib.c linit.c lsyscalls.c
 <DT>
 interpreter:
 <DD>
@@ -282,6 +275,13 @@ lists the
 <LI> allocation function allowed to fail when shrinking a memory block
 <LI> new format '%p' in 'string.format'
 <LI> utf8 library accepts codepoints up to 2^31
+</UL>
+
+<H2><A NAME="changes">Changes since default Lua 5.4</A></H2>
+<H3>Main changes</H3>
+<UL>
+  <li>Working on KolibriOS</li>
+  <li>Add library <a href="manual.html#Syscalls"><code>Syscalls</code></a> for creating programs</li>
 </UL>
 
 <H2><A NAME="license">License</A></H2>
