@@ -44,6 +44,11 @@ LUAMOD_API int (luaopen_debug) (lua_State *L);
 #define LUA_LOADLIBNAME	"package"
 LUAMOD_API int (luaopen_package) (lua_State *L);
 
+#ifdef LUA_ENABLE_SYSCALLS
+#define LUA_SYSCALLSNAME "syscalls"
+LUALIB_API int luaopen_syscalls(lua_State *L);
+#endif
+
 /* open all previous libraries */
 LUALIB_API void (luaL_openlibs) (lua_State *L);
 

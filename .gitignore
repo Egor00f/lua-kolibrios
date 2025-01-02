@@ -1,6 +1,7 @@
 *.o
 *.a
 *.obj
+*.dll
 
 src/lua
 src/luac

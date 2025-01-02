@@ -139,7 +139,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 /* }====================================================== */
 
 
-
+/* 
 #elif defined(LUA_DL_DLL)	/* }{ */
 /*
 ** {======================================================================
@@ -212,7 +212,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 }
 
 /* }====================================================== */
-
+ */
 
 #else				/* }{ */
 /*
@@ -220,6 +220,8 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 ** Fallback for other systems
 ** =======================================================
 */
+
+#include <sys/ksys.h>
 
 #undef LIB_FAIL
 #define LIB_FAIL	"absent"
@@ -229,20 +231,29 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 
 
 static void lsys_unloadlib (void *lib) {
-  (void)(lib);  /* not used */
+  _ksys_free(lib);
 }
 
+void pusherror(lua_State *L, const char* error)
+{
+  char message[128] = "Error: ";
+  strcat(message, error);
+  lua_pushstring(L, message);
+}
 
 static void *lsys_load (lua_State *L, const char *path, int seeglb) {
-  (void)(path); (void)(seeglb);  /* not used */
-  lua_pushliteral(L, DLMSG);
-  return NULL;
+  void *lib = _ksys_dlopen(path);
+  (void)(seeglb); /* not used: symbols are 'global' by default */
+  if (lib == NULL)
+    pusherror(L, "can't load library");
+  return lib;
 }
 
 
 static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
-  (void)(lib); (void)(sym);  /* not used */
-  lua_pushliteral(L, DLMSG);
+  lua_CFunction f = _ksys_dlsym(lib, sym);
+  if(f == NULL)
+    pusherror(L, "can't find function");
   return NULL;
 }
 

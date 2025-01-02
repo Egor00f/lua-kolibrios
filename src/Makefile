@@ -7,8 +7,7 @@
 PLAT= kolibrios
 
 
-
-CC=kos32-gcc 
+CC=kos32-gcc
 LD=kos32-ld
 STRIP=kos32-strip
 OBJCOPY=kos32-objcopy
@@ -22,7 +21,7 @@ RANLIB= ranlib
 RM= rm -f
 UNAME= uname
 
-KOLIBRIOS_REPO=../../kolibrios
+
 
 ifeq ($(OS),Windows_NT)
 	TOOLCHAIN_PATH=C:/MinGW/msys/1.0/home/autobuild/tools/win32
@@ -30,15 +29,19 @@ else
 	TOOLCHAIN_PATH=/home/autobuild/tools/win32
 endif
 
+KOLIBRIOS_REPO=../../kolibrios
+
+
+
 SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
 NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
 SYSLDFLAGS=--image-base 0 -Tapp-dynamic.lds
-SYSLIBS=-nostdlib -L$(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
-MYCFLAGS=
+SYSLIBS=-nostdlib -L $(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
+MYCFLAGS=-DLUA_ENABLE_SYSCALLS
 MYLDFLAGS=
 MYLIBS=
-MYOBJS=
+MYOBJS=lsyscalls.o
 
 # Special flags for compiler modules; -Os reduces code size.
 CMCFLAGS= 
@@ -49,7 +52,7 @@ PLATS= c89
 
 LUA_A=	liblua.a
 CORE_O=	lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o lundump.o lvm.o lzio.o
-LIB_O=	lauxlib.o lbaselib.o lcorolib.o ldblib.o liolib.o lmathlib.o loadlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o linit.o lsyscalls.o
+LIB_O=	lauxlib.o lbaselib.o lcorolib.o ldblib.o liolib.o lmathlib.o loadlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o linit.o
 BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
 
 LUA_T=	lua
@@ -61,11 +64,9 @@ LUAC_O=	luac.o
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
-ALL_S= $(LUA_S)
+ALL_S= $(LUA_S)  $(LUA_S)
 
-default: all
-
-all: $(LUA_A) shared
+default: shared
 
 o:	$(ALL_O)
 
@@ -75,8 +76,6 @@ a:	$(ALL_A)
 $(LUA_A): $(BASE_O)
 
 	$(AR) $@ $(BASE_O)
-	
-	$(RANLIB) $@
 
 # static lua
 $(LUA_T): $(LUA_O) $(LUA_A)
@@ -92,7 +91,6 @@ $(LUAC_T): $(LUAC_O) $(LUA_A)
 
 # Shared lib
 $(LUA_S): $(BASE_O)
-
 	$(CC) -shared -o $@ $(BASE_O) $(SYSLIBS)
 	$(STRIP) --strip-unneeded $@ $(BASE_O)
 
@@ -105,15 +103,15 @@ $(LUA_T_S): $(LUA_O) $(LUA_S)
 static: $(ALL_T)
 
 shared: 
-	$(MAKE) "MYCFLAGS=$(MYCFLAGS) -DLUA_BUILD_AS_DLL" "MYLDFLAGS=$(MYLDFLAGS) -s" \
-	"LUA_S=lua54.obj" "LUA_T_S=lua" lua
+	$(MAKE) "MYLDFLAGS=$(MYLDFLAGS) -s" \
+	"LUA_S=lua54.dll" "LUA_T_S=lua" lua
 	$(MAKE) "LUAC_T=luac" luac
 
 test:
 	./$(LUA_T) -v
 
 clean:
-	$(RM) $(ALL_T) $(ALL_O)
+	$(RM) $(ALL_T) $(ALL_O) $(ALL_S)
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c

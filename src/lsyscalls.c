@@ -3,13 +3,17 @@
 */
 
 
+#ifdef LUA_ENABLE_SYSCALLS
+
+#include <string.h>
+
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include <string.h>
-#include <stdlib.h>
+
 #include <sys/ksys.h>
+
 
 static int syscalls_createWindow(lua_State *L)
 {
@@ -28,7 +32,12 @@ static int syscalls_createWindow(lua_State *L)
 
 static int syscalls_changeWindow(lua_State *L)
 {
-    _ksys_change_window(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4));
+    _ksys_change_window(
+        luaL_checkinteger(L, 1), 
+        luaL_checkinteger(L, 2), 
+        luaL_checkinteger(L, 3), 
+        luaL_checkinteger(L, 4)
+    );
 
     return 0;
 }
@@ -302,7 +311,6 @@ static int syscalls_drawRectangle(lua_State *L)
         luaL_checkinteger(L, 2),
         luaL_checkinteger(L, 3),
         luaL_checkinteger(L, 4),
-        luaL_checkinteger(L, 5));
         luaL_checkinteger(L, 5)
     );
 
@@ -1008,10 +1016,4 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
     return 1;
 }
 
-
-LUAMOD_API int luaopen_syscalls(lua_State *L)
-{
-    luaL_newlib(L, syscallsLib);
-
-    return 1;
-}
+#endif // LUA_ENABLE_SYSCALLS
