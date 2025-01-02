@@ -474,7 +474,29 @@ static int syscalls_getControlKeyState(lua_State *L)
 
 static int syscalls_setHotkey(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_set_sys_hotkey(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2)));
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    uint32_t val = lua_getfield(L, -2, "Shift") | (lua_getfield(L, -2, "Ctrl") << 4)  | (lua_getfield(L, -2, "Alt") << 8);
+
+    if(_ksys_set_sys_hotkey(lua_getfield(L, -2, "Scancode")))
+        luaL_pushfail(L);
+    else
+
+    return 1;
+}
+
+static int syscalls_deleteHotkey(lua_State *L)
+{
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    uint32_t val = lua_getfield(L, -2, "Shift") | (lua_getfield(L, -2, "Ctrl") << 4)  | (lua_getfield(L, -2, "Alt") << 8);
+
+    if(_ksys_del_sys_hotkey(lua_getfield(L, -2, "Scancode")))
+        luaL_pushfail(L);
+    else
+
     return 1;
 }
 
@@ -743,6 +765,8 @@ static const luaL_Reg syscallsLib[] = {
     {"setKeyInputMode", syscalls_setKeyInputMode},
     {"getKey", syscalls_getKey},
     {"getControlKeyState", syscalls_getControlKeyState},
+    {"setHotkey", syscalls_setHotkey},
+    {"deleteHotkey", syscalls_deleteHotkey},
     /* Threads funcs */
     {"threadInfo", syscalls_threadInfo},
     {"killBySlot", syscalls_KillBySlot},
@@ -1073,20 +1097,36 @@ void syscalls_push_scancodes(lua_State *L)
     lua_setfield(L, -2, "Scancode_NumpadPlus");
 }
 
-void syscalls_add_hotkey_states(lua_State *L)
+void syscalls_push_hotkey_states(lua_State *L)
 {
-    
+    lua_pushnumber(L, 0);
+    lua_setfield(L, -2, "hotkeyNoOne");
+
+    lua_pushnumber(L, 1);
+    lua_setfield(L, -2, "hotkeyNoOne");
+
+    lua_pushnumber(L, 2);
+    lua_setfield(L, -2, "hotkeyBoth");
+
+    lua_pushnumber(L, 4);
+    lua_setfield(L, -2, "hotkeyLeftOnly");
+
+    lua_pushnumber(L, 5);
+    lua_setfield(L, -2, "hotkeyRightOnly");
 }
 
 LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 
-    syscalls_add_events(L);
-    syscalls_add_slotStates(L);
-    syscalls_add_scancodes(L);
+    syscalls_push_events(L);
+    syscalls_push_slotStates(L);
+    syscalls_push_scancodes(L);
+    syscalls_push_hotkey_states(L);
 
     return 1;
 }
+
+
 
 #endif // LUA_ENABLE_SYSCALLS
