@@ -7,8 +7,6 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include <string.h>
-#include <stdlib.h>
 #include <sys/ksys.h>
 
 static int syscalls_createWindow(lua_State *L)
@@ -302,7 +300,6 @@ static int syscalls_drawRectangle(lua_State *L)
         luaL_checkinteger(L, 2),
         luaL_checkinteger(L, 3),
         luaL_checkinteger(L, 4),
-        luaL_checkinteger(L, 5));
         luaL_checkinteger(L, 5)
     );
 
@@ -997,21 +994,13 @@ void syscalls_add_hotkey_states(lua_State *L)
     
 }
 
-LUALIB_API int luaopen_syscalls(lua_State *L)
+LUALIB_API int luaopen_lsyscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 
     syscalls_add_events(L);
     syscalls_add_slotStates(L);
     syscalls_add_scancodes(L);
-
-    return 1;
-}
-
-
-LUAMOD_API int luaopen_syscalls(lua_State *L)
-{
-    luaL_newlib(L, syscallsLib);
 
     return 1;
 }
