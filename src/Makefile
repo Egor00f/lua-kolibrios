@@ -63,7 +63,6 @@ LUAC_O=	luac.o
 
 
 LUA_S = lua54.dll
-LUA_T_S = lua
 
 
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
@@ -108,7 +107,8 @@ $(LUA_T_S): $(LUA_O) $(LUA_S)
 static: $(ALL_T)
 
 shared: 
-	$(MAKE) "MYLDFLAGS=$(MYLDFLAGS) -s" lua
+	$(MAKE) "MYLDFLAGS=$(MYLDFLAGS) -s" \
+	"LUA_T_S = lua" "LUA_T= " lua
 	$(MAKE) "LUAC_T=luac" luac
 
 test:
