@@ -11,9 +11,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-
 #include <sys/ksys.h>
-
 
 ksys_key_input_mode_t syscalls_KeyInputState = KSYS_KEY_INPUT_MODE_ASCII;
 
@@ -155,7 +153,17 @@ static int syscalls_threadInfo(lua_State *L)
 
 static int syscalls_KillBySlot(lua_State *L)
 {
-    _ksys_kill_by_slot(luaL_checkinteger(L, 1));
+
+    _ksys_kill_by_slot(
+        luaL_checkinteger(L, 1)
+    );
+
+    return 0;
+}
+
+static int syscalls_setEventMask(lua_State *L)
+{
+    _ksys_set_event_mask(luaL_checkinteger(L, 1));
 
     return 0;
 }
@@ -251,16 +259,14 @@ static int syscalls_getButton(lua_State *L)
         lua_pushnil(L);
     }
 
-    
-
     return 2;
 }
 
 static int syscalls_screenSize(lua_State *L)
 {
-    lua_createtable(L, 0, 2);
-
     ksys_pos_t size = _ksys_screen_size();
+
+    lua_createtable(L, 0, 2);
 
     lua_pushinteger(L, size.x);
     lua_setfield(L, -2, "x");
@@ -273,14 +279,22 @@ static int syscalls_screenSize(lua_State *L)
 
 static int syscalls_backgroundSetSize(lua_State *L)
 {
-    _ksys_bg_set_size(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2));
+    _ksys_bg_set_size(
+        luaL_checkinteger(L, 1), 
+        luaL_checkinteger(L, 2)
+    );
 
     return 0;
 }
 
 static int syscalls_backgroundPutPixel(lua_State *L)
 {
-    _ksys_bg_put_pixel(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4));
+    _ksys_bg_put_pixel(
+        luaL_checkinteger(L, 1), 
+        luaL_checkinteger(L, 2), 
+        luaL_checkinteger(L, 3), 
+        luaL_checkinteger(L, 4)
+    );
 
     return 0;
 }
@@ -389,7 +403,7 @@ static int syscalls_getSkinHeight(lua_State *L)
 static int syscalls_setKeyInputMode(lua_State *L)
 {
     syscalls_KeyInputState = luaL_checkinteger(L, 1);
-        _ksys_set_key_input_mode(syscalls_KeyInputState);
+    _ksys_set_key_input_mode(syscalls_KeyInputState);
 
     return 0;
 }
@@ -466,8 +480,8 @@ static int syscalls_getControlKeyState(lua_State *L)
     lua_pushboolean(L, state & KSYS_CONTROL_NUM_LOCK);
     lua_setfield(L, -2, "NumLock");
 
-    lua_pushboolean(L, state & KSYS_CONTROL_NUM_LOCK);
-    lua_setfield(L, -2, "ScrolLock");
+    lua_pushboolean(L, state & KSYS_CONTROL_SCROLL_LOCK);
+    lua_setfield(L, -2, "ScrollLock");
 
     return 1;
 }
@@ -479,11 +493,10 @@ static int syscalls_SetHotkey(lua_State *L)
 
     if (_ksys_set_sys_hotkey(
             lua_getfield(L, -2, "Scancode"), 
-            lua_getfield(L, -2, "Shift") | 
-            (lua_getfield(L, -2, "Ctrl") << 4) | 
-            (lua_getfield(L, -2, "Alt") << 8)
-            )
-        )
+            ( lua_getfield(L, -2, "Shift")    ) | 
+            ( lua_getfield(L, -2, "Ctrl") << 4) | 
+            ( lua_getfield(L, -2, "Alt")  << 8)
+        ))
     {
         luaL_pushfail(L);
     }
@@ -547,9 +560,10 @@ static int syscalls_getMousePositionWindow(lua_State *L)
 
 static int syscalls_getMouseWheels(lua_State *L)
 {
+    uint32_t state = _ksys_get_mouse_wheels();
+    
     lua_createtable(L, 0, 2);
 
-    uint32_t state = _ksys_get_mouse_wheels();
     lua_pushinteger(L, state & 0xFFFF);
     lua_setfield(L, -2, "y");
 
@@ -568,7 +582,7 @@ void createMouseState(uint32_t state, lua_State *L)
     lua_setfield(L, -2, "RightButton");
 
     lua_pushboolean(L, state & KSYS_MOUSE_MBUTTON_PRESSED);
-    lua_setfield(L, -2, "MidleButton");
+    lua_setfield(L, -2, "MiddleButton");
 
     lua_pushboolean(L, state & KSYS_MOUSE_4BUTTON_PRESSED);
     lua_setfield(L, -2, "Button4");
@@ -679,14 +693,22 @@ static int syscalls_MouseSimulateState(lua_State *L)
     lua_settop(L, 1);
     luaL_checktype(L, 1, LUA_TTABLE);
 
+    lua_getfield(L, 1, "LeftButton");
+    lua_getfield(L, 1, "RightButton");
+    lua_getfield(L, 1, "MiddleButton");
+    lua_getfield(L, 1, "Button4");
+    lua_getfield(L, 1, "Button5");
+
     _ksys_set_mouse_settings(
         KSYS_MOUSE_SIM_STATE, 
-        (lua_getfield(L, 1, "Button5") << 4) |
-        (lua_getfield(L, 1, "Button4") << 3) |
-        (lua_getfield(L, 1, "MiddleButton") << 2) | 
-        (lua_getfield(L, 1, "RightButton") << 1) | 
-        (lua_getfield(L, 1, "LeftButton"))
+        (luaL_checkinteger(L, -1) << 4) |
+        (luaL_checkinteger(L, -2) << 3) |
+        (luaL_checkinteger(L, -3) << 2) | 
+        (luaL_checkinteger(L, -4) << 1) | 
+        (luaL_checkinteger(L, -5))
     );
+
+    lua_pop(L, 2);
 
     return 1;
 }
@@ -776,6 +798,7 @@ static const luaL_Reg syscallsLib[] = {
     {"deleteButton", syscalls_deleteButton},
     {"getButton", syscalls_getButton},
     /* Events funcs */
+    {"SetEventMask", syscalls_setEventMask},
     {"waitEvent", syscalls_waitEvent},
     {"checkEvent", syscalls_checkEvent},
     {"waitEventTimeout", syscalls_waitEventTimeout},
@@ -869,7 +892,7 @@ void syscalls_push_buttonCodes(lua_State *L)
     lua_setfield(L, -2, "RightButton");
 
     lua_pushinteger(L, KSYS_MOUSE_MBUTTON_PRESSED);
-    lua_setfield(L, -2, "MidleButton");
+    lua_setfield(L, -2, "MiddleButton");
 
     lua_pushinteger(L, KSYS_MOUSE_4BUTTON_PRESSED);
     lua_setfield(L, -2, "Button4");
@@ -1162,6 +1185,8 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
     syscalls_push_slotStates(L);
     syscalls_push_scancodes(L);
     syscalls_push_hotkey_states(L);
+
+    _ksys_set_event_mask(7);
 
     return 1;
 }
