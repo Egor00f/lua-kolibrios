@@ -15,6 +15,8 @@
 #include <sys/ksys.h>
 
 
+ksys_key_input_mode_t syscalls_KeyInputState = KSYS_KEY_INPUT_MODE_ASCII;
+
 static int syscalls_createWindow(lua_State *L)
 {
     _ksys_create_window(
@@ -77,7 +79,7 @@ static int syscalls_defineButton(lua_State *L)
     return 0;
 }
 
-static int syscalls_deletebutton(lua_State *L)
+static int syscalls_deleteButton(lua_State *L)
 {
     _ksys_delete_button(luaL_checkinteger(L, 1));
 
@@ -112,40 +114,40 @@ static int syscalls_threadInfo(lua_State *L)
     lua_pushstring(L, t.name);
     lua_setfield(L, -2, "name");
 
-    lua_pushnumber(L, t.cpu_usage);
+    lua_pushinteger(L, t.cpu_usage);
     lua_setfield(L, -2, "cpu_usage");
 
-    lua_pushnumber(L, t.memused);
+    lua_pushinteger(L, t.memused);
     lua_setfield(L, -2, "memused");
-    
-    lua_pushnumber(L, t.pid);
+
+    lua_pushinteger(L, t.pid);
     lua_setfield(L, -2, "pid");
 
-    lua_pushnumber(L, t.key_input_mode);
+    lua_pushinteger(L, t.key_input_mode);
     lua_setfield(L, -2, "keyInputMode");
 
-    lua_pushnumber(L, t.pos_in_window_stack);
+    lua_pushinteger(L, t.pos_in_window_stack);
     lua_setfield(L, -2, "posInWindowStack");
 
-    lua_pushnumber(L, t.slot_num_window_stack);
+    lua_pushinteger(L, t.slot_num_window_stack);
     lua_setfield(L, -2, "slotNumWindowStack");
-    
-    lua_pushnumber(L, t.slot_state);
+
+    lua_pushinteger(L, t.slot_state);
     lua_setfield(L, -2, "slotState");
 
-    lua_pushnumber(L, t.window_state);
+    lua_pushinteger(L, t.window_state);
     lua_setfield(L, -2, "windowState");
 
-    lua_pushnumber(L, t.winx_size);
+    lua_pushinteger(L, t.winx_size);
     lua_setfield(L, -2, "winXSize");
 
-    lua_pushnumber(L, t.winy_size);
+    lua_pushinteger(L, t.winy_size);
     lua_setfield(L, -2, "winYSize");
 
-    lua_pushnumber(L, t.winx_start);
+    lua_pushinteger(L, t.winx_start);
     lua_setfield(L, -2, "winXPos");
 
-    lua_pushnumber(L, t.winy_start);
+    lua_pushinteger(L, t.winy_start);
     lua_setfield(L, -2, "winYPos");
   
     return 1;
@@ -160,35 +162,35 @@ static int syscalls_KillBySlot(lua_State *L)
 
 static int syscalls_waitEvent(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_wait_event());
+    lua_pushinteger(L, _ksys_wait_event());
 
     return 1;
 }
 
 static int syscalls_checkEvent(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_check_event());
+    lua_pushinteger(L, _ksys_check_event());
 
     return 1;
 }
 
 static int syscalls_waitEventTimeout(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_wait_event_timeout(luaL_checkinteger(L, 1)));
+    lua_pushinteger(L, _ksys_wait_event_timeout(luaL_checkinteger(L, 1)));
 
     return 1;
 }
 
 static int syscalls_getFreeRam(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_get_ram_size());
+    lua_pushinteger(L, _ksys_get_ram_size());
 
     return 1;
 }
 
 static int syscalls_getRamSize(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_get_full_ram());
+    lua_pushinteger(L, _ksys_get_full_ram());
 
     return 1;
 }
@@ -230,9 +232,28 @@ static int syscalls_unfocusWindow(lua_State *L)
 
 static int syscalls_getButton(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_get_button());
+    uint32_t val;
 
-    return 1;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(17));
+
+    if(val != 0)
+    {
+        lua_pushinteger(L, val >> 8);
+
+        lua_pushinteger(L, val & 0xFF);
+    }
+    else
+    {
+        lua_pushnil(L);
+        lua_pushnil(L);
+    }
+
+    
+
+    return 2;
 }
 
 static int syscalls_screenSize(lua_State *L)
@@ -241,10 +262,10 @@ static int syscalls_screenSize(lua_State *L)
 
     ksys_pos_t size = _ksys_screen_size();
 
-    lua_pushnumber(L, size.x);
+    lua_pushinteger(L, size.x);
     lua_setfield(L, -2, "x");
 
-    lua_pushnumber(L, size.y);
+    lua_pushinteger(L, size.y);
     lua_setfield(L, -2, "y");
 
     return 1;
@@ -273,7 +294,7 @@ static int syscalls_backgroundRedraw(lua_State *L)
 
 static int syscalls_getCPUClock(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_get_cpu_clock());
+    lua_pushinteger(L, _ksys_get_cpu_clock());
 
     return 1;
 }
@@ -325,34 +346,34 @@ static int syscalls_getSystemColors(lua_State *L)
 
     lua_createtable(L, 0, 10);
 
-    lua_pushnumber(L, t.frame_area);
+    lua_pushinteger(L, t.frame_area);
     lua_setfield(L, -2, "frameArea");
 
-    lua_pushnumber(L, t.grab_bar);
+    lua_pushinteger(L, t.grab_bar);
     lua_setfield(L, -2, "grabBar");
 
-    lua_pushnumber(L, t.grab_bar_button);
+    lua_pushinteger(L, t.grab_bar_button);
     lua_setfield(L, -2, "grabBarButton");
 
-    lua_pushnumber(L, t.grab_button_text);
+    lua_pushinteger(L, t.grab_button_text);
     lua_setfield(L, -2, "grabButtonText");
 
-    lua_pushnumber(L, t.grab_text);
+    lua_pushinteger(L, t.grab_text);
     lua_setfield(L, -2, "grabText");
 
-    lua_pushnumber(L, t.work_area);
+    lua_pushinteger(L, t.work_area);
     lua_setfield(L, -2, "workArea");
 
-    lua_pushnumber(L, t.work_button);
+    lua_pushinteger(L, t.work_button);
     lua_setfield(L, -2, "workButton");
 
-    lua_pushnumber(L, t.work_button_text);
+    lua_pushinteger(L, t.work_button_text);
     lua_setfield(L, -2, "workButtonText");
 
-    lua_pushnumber(L, t.work_graph);
+    lua_pushinteger(L, t.work_graph);
     lua_setfield(L, -2, "workGraph");
 
-    lua_pushnumber(L, t.work_text);
+    lua_pushinteger(L, t.work_text);
     lua_setfield(L, -2, "workText");
 
     return 1;
@@ -360,15 +381,24 @@ static int syscalls_getSystemColors(lua_State *L)
 
 static int syscalls_getSkinHeight(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_get_skin_height());
+    lua_pushinteger(L, _ksys_get_skin_height());
+
     return 1;
 }
 
 static int syscalls_setKeyInputMode(lua_State *L)
 {
-    _ksys_set_key_input_mode(luaL_checkinteger(L, 1));
+    syscalls_KeyInputState = luaL_checkinteger(L, 1);
+        _ksys_set_key_input_mode(syscalls_KeyInputState);
 
     return 0;
+}
+
+static int syscalls_getKeyInputMode(lua_State *L)
+{
+    lua_pushinteger(L, syscalls_KeyInputState);
+
+    return 1;
 }
 
 static int syscalls_getKey(lua_State *L)
@@ -381,15 +411,22 @@ static int syscalls_getKey(lua_State *L)
     }
     else if(a.state == 0) 
     {
-        char s[2];
-        s[0] = a.code;
-        s[1] = '\n';
-        lua_pushstring(L, s);
+        if (syscalls_KeyInputState == KSYS_KEY_INPUT_MODE_ASCII)
+        {
+            char s[2];
+            s[0] = a.code;
+            s[1] = '\n';
+            lua_pushstring(L, s);
+        }
+        else
+        {
+            lua_pushinteger(L, a.code);
+        }
     }
     
     if(a.state == 2)
     {
-        lua_pushnumber(L, a.code);
+        lua_pushinteger(L, a.code);
     }
     else
     {
@@ -435,9 +472,42 @@ static int syscalls_getControlKeyState(lua_State *L)
     return 1;
 }
 
-static int syscalls_setHotkey(lua_State *L)
+static int syscalls_SetHotkey(lua_State *L)
 {
-    lua_pushnumber(L, _ksys_set_sys_hotkey(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2)));
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    if (_ksys_set_sys_hotkey(
+            lua_getfield(L, -2, "Scancode"), 
+            lua_getfield(L, -2, "Shift") | 
+            (lua_getfield(L, -2, "Ctrl") << 4) | 
+            (lua_getfield(L, -2, "Alt") << 8)
+            )
+        )
+    {
+        luaL_pushfail(L);
+    }
+
+    return 1;
+}
+
+static int syscalls_DeleteHotkey(lua_State *L)
+{
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    if (_ksys_del_sys_hotkey(
+            lua_getfield(L, -2, "Scancode"), 
+            lua_getfield(L, -2, "Shift") | 
+            (lua_getfield(L, -2, "Ctrl") << 4) | 
+            (lua_getfield(L, -2, "Alt") << 8)
+            )
+        )
+    {
+        luaL_pushfail(L);
+    }
+
+
     return 1;
 }
 
@@ -451,10 +521,10 @@ static int syscalls_getMousePositionScreen(lua_State *L)
 
     lua_createtable(L, 0, 2);
 
-    lua_pushnumber(L, pos.x);
+    lua_pushinteger(L, pos.x);
     lua_setfield(L, -2, "x");
 
-    lua_pushnumber(L, pos.y);
+    lua_pushinteger(L, pos.y);
     lua_setfield(L, -2, "y");
 
     return 1;
@@ -466,10 +536,10 @@ static int syscalls_getMousePositionWindow(lua_State *L)
 
     lua_createtable(L, 0, 2);
 
-    lua_pushnumber(L, pos.x);
+    lua_pushinteger(L, pos.x);
     lua_setfield(L, -2, "x");
 
-    lua_pushnumber(L, pos.y);
+    lua_pushinteger(L, pos.y);
     lua_setfield(L, -2, "y");
 
     return 1;
@@ -480,10 +550,10 @@ static int syscalls_getMouseWheels(lua_State *L)
     lua_createtable(L, 0, 2);
 
     uint32_t state = _ksys_get_mouse_wheels();
-    lua_pushnumber(L, state & 0xFFFF);
+    lua_pushinteger(L, state & 0xFFFF);
     lua_setfield(L, -2, "y");
 
-    lua_pushnumber(L, state << 16);
+    lua_pushinteger(L, state << 16);
     lua_setfield(L, -2, "x");
 
     return 1;
@@ -525,13 +595,13 @@ static int syscalls_getMouseEvents(lua_State *L)
     createMouseState(state, L);
 
     lua_pushboolean(L, state & (1 << 8));
-    lua_setfield(L, -2, "LeftButtonPressed");
+    lua_setfield(L, -2, "getMouseEvents");
 
     lua_pushboolean(L, state & (1 << 9));
     lua_setfield(L, -2, "RightButtonPressed");
 
     lua_pushboolean(L, state & (1 << 10));
-    lua_setfield(L, -2, "MButtonPressed");
+    lua_setfield(L, -2, "MiddleButtonPressed");
 
     lua_pushboolean(L, state & (1 << 15));
     lua_setfield(L, -2, "VerticalScroll");
@@ -543,7 +613,7 @@ static int syscalls_getMouseEvents(lua_State *L)
     lua_setfield(L, -2, "RightButtonReleased");
 
     lua_pushboolean(L, state & (1 << 18));
-    lua_setfield(L, -2, "MidleButtonReleased");
+    lua_setfield(L, -2, "MiddleButtonReleased");
 
     lua_pushboolean(L, state & (1 << 23));
     lua_setfield(L, -2, "HorizontalScroll");
@@ -569,21 +639,21 @@ inline uint32_t getMouseSettings(ksys_mouse_settings_t settings)
 
 static int syscalls_GetMouseSpeed(lua_State *L)
 {
-    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SPEED));
+    lua_pushinteger(L, getMouseSettings(KSYS_MOUSE_GET_SPEED));
 
     return 1;
 }
 
 static int syscalls_GetMouseSens(lua_State *L)
 {
-    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SENS));
+    lua_pushinteger(L, getMouseSettings(KSYS_MOUSE_GET_SENS));
 
     return 1;
 }
 
 static int syscalls_GetMouseDoubleClickDelay(lua_State *L)
 {
-    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY));
+    lua_pushinteger(L, getMouseSettings(KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY));
 
     return 1;
 }
@@ -592,13 +662,13 @@ static int syscalls_GetMouseSettings(lua_State *L)
 {
     lua_createtable(L, 0, 3);
 
-    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SPEED));
+    lua_pushinteger(L, getMouseSettings(KSYS_MOUSE_GET_SPEED));
     lua_setfield(L, -2, "speed");
 
-    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_SENS));
-    lua_setfield(L, -2, "sensetivity");
+    lua_pushinteger(L, getMouseSettings(KSYS_MOUSE_GET_SENS));
+    lua_setfield(L, -2, "sensitivity");
 
-    lua_pushnumber(L, getMouseSettings(KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY));
+    lua_pushinteger(L, getMouseSettings(KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY));
     lua_setfield(L, -2, "doubleClickDelay");
 
     return 1;
@@ -613,9 +683,9 @@ static int syscalls_MouseSimulateState(lua_State *L)
         KSYS_MOUSE_SIM_STATE, 
         (lua_getfield(L, 1, "Button5") << 4) |
         (lua_getfield(L, 1, "Button4") << 3) |
-        (lua_getfield(L, 1, "midleButton") << 2) | 
-        (lua_getfield(L, 1, "rightButton") << 1) | 
-        lua_getfield(L, 1, "leftButton")
+        (lua_getfield(L, 1, "MiddleButton") << 2) | 
+        (lua_getfield(L, 1, "RightButton") << 1) | 
+        (lua_getfield(L, 1, "LeftButton"))
     );
 
     return 1;
@@ -661,7 +731,32 @@ static int syscalls_SetMouseSettings(lua_State *L)
     return 0;
 }
 
+static int syscalls_LoadCursor(lua_State *L)
+{
+    lua_pushinteger(
+        L, 
+        _ksys_load_cursor(
+            luaL_checkstring(L, 1), 
+            KSYS_CURSOR_FROM_FILE | 
+            (luaL_checkinteger(L, 2) << 24) | 
+            (luaL_checkinteger(L, 3) << 16)
+        )
+    );
+    return 1;
+}
 
+static int syscalls_SetCursor(lua_State *L)
+{
+    lua_pushinteger(L, _ksys_set_cursor(luaL_checkinteger(L, 1)));
+    return 1;
+}
+
+static int syscalls_DeleteCursor(lua_State *L)
+{
+    _ksys_delete_cursor(luaL_checkinteger(L, 1));
+
+    return 0;
+}
 
 /*
 ** functions for 'syscalls' library
@@ -678,7 +773,7 @@ static const luaL_Reg syscallsLib[] = {
     {"setWindowTitle", syscalls_setWindowTitle},
     /* Buttons funcs*/
     {"defineButton", syscalls_defineButton},
-    {"deleteButton", syscalls_deletebutton},
+    {"deleteButton", syscalls_deleteButton},
     {"getButton", syscalls_getButton},
     /* Events funcs */
     {"waitEvent", syscalls_waitEvent},
@@ -706,6 +801,8 @@ static const luaL_Reg syscallsLib[] = {
     {"setKeyInputMode", syscalls_setKeyInputMode},
     {"getKey", syscalls_getKey},
     {"getControlKeyState", syscalls_getControlKeyState},
+    {"SetHotkey", syscalls_SetHotkey},
+    {"DeleteHotkey", syscalls_DeleteHotkey},
     /* Threads funcs */
     {"threadInfo", syscalls_threadInfo},
     {"killBySlot", syscalls_KillBySlot},
@@ -725,295 +822,350 @@ static const luaL_Reg syscallsLib[] = {
     {"SetMousePos", syscalls_SetMousePos},
     {"SetMouseDoubleClickDelay", syscalls_SetMouseDoubleClickDelay},
     {"SetMouseSettings", syscalls_SetMouseSettings},
+    {"LoadCursor", syscalls_LoadCursor},
+    {"SetCursor", syscalls_SetCursor},
+    {"DeleteCursor", syscalls_DeleteCursor},
     {NULL, NULL}};
 
-void syscalls_add_events(lua_State *L)
+void syscalls_push_events(lua_State *L)
 {
-    lua_pushnumber(L, KSYS_EVENT_NONE);
+    lua_pushinteger(L, KSYS_EVENT_NONE);
     lua_setfield(L, -2, "EventNone");
 
-    lua_pushnumber(L, KSYS_EVENT_REDRAW);
+    lua_pushinteger(L, KSYS_EVENT_REDRAW);
     lua_setfield(L, -2, "EventRedraw");
 
-    lua_pushnumber(L, KSYS_EVENT_KEY);
+    lua_pushinteger(L, KSYS_EVENT_KEY);
     lua_setfield(L, -2, "EventKey");
 
-    lua_pushnumber(L, KSYS_EVENT_BUTTON);
+    lua_pushinteger(L, KSYS_EVENT_BUTTON);
     lua_setfield(L, -2, "EventButton");
 
-    lua_pushnumber(L, KSYS_EVENT_DESKTOP);
+    lua_pushinteger(L, KSYS_EVENT_DESKTOP);
     lua_setfield(L, -2, "EventDesktop");
 
-    lua_pushnumber(L, KSYS_EVENT_MOUSE);
+    lua_pushinteger(L, KSYS_EVENT_MOUSE);
     lua_setfield(L, -2, "EventMouse");
 
-    lua_pushnumber(L, KSYS_EVENT_IPC);
+    lua_pushinteger(L, KSYS_EVENT_IPC);
     lua_setfield(L, -2, "EventIPC");
 
-    lua_pushnumber(L, KSYS_EVENT_NETWORK);
+    lua_pushinteger(L, KSYS_EVENT_NETWORK);
     lua_setfield(L, -2, "EventNetwork");
 
-    lua_pushnumber(L, KSYS_EVENT_DEBUG);
+    lua_pushinteger(L, KSYS_EVENT_DEBUG);
     lua_setfield(L, -2, "EventDebug");
 
-    lua_pushnumber(L, KSYS_EVENT_IRQBEGIN);
+    lua_pushinteger(L, KSYS_EVENT_IRQBEGIN);
     lua_setfield(L, -2, "EventIRQBegin");
 }
 
-void syscalls_add_slotStates(lua_State *L)
+void syscalls_push_buttonCodes(lua_State *L)
 {
-    lua_pushnumber(L, KSYS_SLOT_STATE_RUNNING);
-    lua_setfield(L, -2, "StateRunning");
+    lua_pushinteger(L, KSYS_MOUSE_LBUTTON_PRESSED);
+    lua_setfield(L, -2, "LeftButton");
 
-    lua_pushnumber(L, KSYS_SLOT_STATE_SUSPENDED);
+    lua_pushinteger(L, KSYS_MOUSE_RBUTTON_PRESSED);
+    lua_setfield(L, -2, "RightButton");
+
+    lua_pushinteger(L, KSYS_MOUSE_MBUTTON_PRESSED);
+    lua_setfield(L, -2, "MidleButton");
+
+    lua_pushinteger(L, KSYS_MOUSE_4BUTTON_PRESSED);
+    lua_setfield(L, -2, "Button4");
+
+    lua_pushinteger(L, KSYS_MOUSE_5BUTTON_PRESSED);
+    lua_setfield(L, -2, "Button5");
+}
+
+void syscalls_push_slotStates(lua_State *L)
+{
+    lua_pushinteger(L, KSYS_SLOT_STATE_RUNNING);
+    lua_setfield(L, -2, "stateRunning");
+
+    lua_pushinteger(L, KSYS_SLOT_STATE_SUSPENDED);
     lua_setfield(L, -2, "stateSuspended");
 
-    lua_pushnumber(L, KSYS_SLOT_STATE_SUSPENDED_WAIT_EVENT);
+    lua_pushinteger(L, KSYS_SLOT_STATE_SUSPENDED_WAIT_EVENT);
     lua_setfield(L, -2, "stateSuspendedWaitEvent");
 
-    lua_pushnumber(L, KSYS_SLOT_STATE_NORMAL_TERM);
+    lua_pushinteger(L, KSYS_SLOT_STATE_NORMAL_TERM);
     lua_setfield(L, -2, "stateNormalTerm");
 
-    lua_pushnumber(L, KSYS_SLOT_STATE_EXCEPT_TERM);
+    lua_pushinteger(L, KSYS_SLOT_STATE_EXCEPT_TERM);
     lua_setfield(L, -2, "stateExceptTerm");
 
-    lua_pushnumber(L, KSYS_SLOT_STATE_EXCEPT_TERM);
+    lua_pushinteger(L, KSYS_SLOT_STATE_EXCEPT_TERM);
     lua_setfield(L, -2, "stateWaitEvent");
 
-    lua_pushnumber(L, KSYS_SLOT_STATE_WAIT_EVENT);
+    lua_pushinteger(L, KSYS_SLOT_STATE_WAIT_EVENT);
     lua_setfield(L, -2, "stateFree");
 }
 
-void syscalls_add_scancodes(lua_State *L)
+void syscalls_push_scancodes(lua_State *L)
 {
-    lua_pushnumber(L, KSYS_SCANCODE_0);
+    lua_pushinteger(L, KSYS_SCANCODE_0);
     lua_setfield(L, -2, "Scancode_0");
 
-    lua_pushnumber(L, KSYS_SCANCODE_1);
+    lua_pushinteger(L, KSYS_SCANCODE_1);
     lua_setfield(L, -2, "Scancode_1");
 
-    lua_pushnumber(L, KSYS_SCANCODE_2);
+    lua_pushinteger(L, KSYS_SCANCODE_2);
     lua_setfield(L, -2, "Scancode_2");
 
-    lua_pushnumber(L, KSYS_SCANCODE_3);
+    lua_pushinteger(L, KSYS_SCANCODE_3);
     lua_setfield(L, -2, "Scancode_3");
 
-    lua_pushnumber(L, KSYS_SCANCODE_4);
+    lua_pushinteger(L, KSYS_SCANCODE_4);
     lua_setfield(L, -2, "Scancode_4");
 
-    lua_pushnumber(L, KSYS_SCANCODE_5);
+    lua_pushinteger(L, KSYS_SCANCODE_5);
     lua_setfield(L, -2, "Scancode_6");
 
-    lua_pushnumber(L, KSYS_SCANCODE_7);
+    lua_pushinteger(L, KSYS_SCANCODE_7);
     lua_setfield(L, -2, "Scancode_7");
 
-    lua_pushnumber(L, KSYS_SCANCODE_8);
+    lua_pushinteger(L, KSYS_SCANCODE_8);
     lua_setfield(L, -2, "Scancode_8");
 
-    lua_pushnumber(L, KSYS_SCANCODE_9);
+    lua_pushinteger(L, KSYS_SCANCODE_9);
     lua_setfield(L, -2, "Scancode_9");
 
-    lua_pushnumber(L, KSYS_SCANCODE_A);
+    lua_pushinteger(L, KSYS_SCANCODE_A);
     lua_setfield(L, -2, "Scancode_A");
 
-    lua_pushnumber(L, KSYS_SCANCODE_B);
+    lua_pushinteger(L, KSYS_SCANCODE_B);
     lua_setfield(L, -2, "Scancode_B");
 
-    lua_pushnumber(L, KSYS_SCANCODE_C);
+    lua_pushinteger(L, KSYS_SCANCODE_C);
     lua_setfield(L, -2, "Scancode_C");
 
-    lua_pushnumber(L, KSYS_SCANCODE_D);
+    lua_pushinteger(L, KSYS_SCANCODE_D);
     lua_setfield(L, -2, "Scancode_D");
 
-    lua_pushnumber(L, KSYS_SCANCODE_E);
+    lua_pushinteger(L, KSYS_SCANCODE_E);
     lua_setfield(L, -2, "Scancode_E");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F);
+    lua_pushinteger(L, KSYS_SCANCODE_F);
     lua_setfield(L, -2, "Scancode_F");
 
-    lua_pushnumber(L, KSYS_SCANCODE_G);
+    lua_pushinteger(L, KSYS_SCANCODE_G);
     lua_setfield(L, -2, "Scancode_G");
 
-    lua_pushnumber(L, KSYS_SCANCODE_H);
+    lua_pushinteger(L, KSYS_SCANCODE_H);
     lua_setfield(L, -2, "Scancode_H");
 
-    lua_pushnumber(L, KSYS_SCANCODE_J);
+    lua_pushinteger(L, KSYS_SCANCODE_J);
     lua_setfield(L, -2, "Scancode_J");
 
-    lua_pushnumber(L, KSYS_SCANCODE_K);
+    lua_pushinteger(L, KSYS_SCANCODE_K);
     lua_setfield(L, -2, "Scancode_K");
 
-    lua_pushnumber(L, KSYS_SCANCODE_L);
+    lua_pushinteger(L, KSYS_SCANCODE_L);
     lua_setfield(L, -2, "Scancode_L");
 
-    lua_pushnumber(L, KSYS_SCANCODE_M);
+    lua_pushinteger(L, KSYS_SCANCODE_M);
     lua_setfield(L, -2, "Scancode_M");
 
-    lua_pushnumber(L, KSYS_SCANCODE_N);
+    lua_pushinteger(L, KSYS_SCANCODE_N);
     lua_setfield(L, -2, "Scancode_N");
 
-    lua_pushnumber(L, KSYS_SCANCODE_O);
+    lua_pushinteger(L, KSYS_SCANCODE_O);
     lua_setfield(L, -2, "Scancode_O");
 
-    lua_pushnumber(L, KSYS_SCANCODE_P);
+    lua_pushinteger(L, KSYS_SCANCODE_P);
     lua_setfield(L, -2, "Scancode_P");
 
-    lua_pushnumber(L, KSYS_SCANCODE_Q);
+    lua_pushinteger(L, KSYS_SCANCODE_Q);
     lua_setfield(L, -2, "Scancode_Q");
 
-    lua_pushnumber(L, KSYS_SCANCODE_R);
+    lua_pushinteger(L, KSYS_SCANCODE_R);
     lua_setfield(L, -2, "Scancode_R");
 
-    lua_pushnumber(L, KSYS_SCANCODE_S);
+    lua_pushinteger(L, KSYS_SCANCODE_S);
     lua_setfield(L, -2, "Scancode_S");
 
-    lua_pushnumber(L, KSYS_SCANCODE_T);
+    lua_pushinteger(L, KSYS_SCANCODE_T);
     lua_setfield(L, -2, "Scancode_T");
 
-    lua_pushnumber(L, KSYS_SCANCODE_U);
+    lua_pushinteger(L, KSYS_SCANCODE_U);
     lua_setfield(L, -2, "Scancode_U");
 
-    lua_pushnumber(L, KSYS_SCANCODE_V);
+    lua_pushinteger(L, KSYS_SCANCODE_V);
     lua_setfield(L, -2, "Scancode_V");
 
-    lua_pushnumber(L, KSYS_SCANCODE_W);
+    lua_pushinteger(L, KSYS_SCANCODE_W);
     lua_setfield(L, -2, "Scancode_W");
 
-    lua_pushnumber(L, KSYS_SCANCODE_X);
+    lua_pushinteger(L, KSYS_SCANCODE_X);
     lua_setfield(L, -2, "Scancode_X");
 
-    lua_pushnumber(L, KSYS_SCANCODE_Y);
+    lua_pushinteger(L, KSYS_SCANCODE_Y);
     lua_setfield(L, -2, "Scancode_Y");
 
-    lua_pushnumber(L, KSYS_SCANCODE_Z);
+    lua_pushinteger(L, KSYS_SCANCODE_Z);
     lua_setfield(L, -2, "Scancode_Z");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F1);
+    lua_pushinteger(L, KSYS_SCANCODE_F1);
     lua_setfield(L, -2, "Scancode_F1");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F2);
+    lua_pushinteger(L, KSYS_SCANCODE_F2);
     lua_setfield(L, -2, "Scancode_F2");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F3);
+    lua_pushinteger(L, KSYS_SCANCODE_F3);
     lua_setfield(L, -2, "Scancode_F3");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F4);
+    lua_pushinteger(L, KSYS_SCANCODE_F4);
     lua_setfield(L, -2, "Scancode_F4");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F5);
+    lua_pushinteger(L, KSYS_SCANCODE_F5);
     lua_setfield(L, -2, "Scancode_F5");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F6);
+    lua_pushinteger(L, KSYS_SCANCODE_F6);
     lua_setfield(L, -2, "Scancode_F6");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F7);
+    lua_pushinteger(L, KSYS_SCANCODE_F7);
     lua_setfield(L, -2, "Scancode_F7");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F8);
+    lua_pushinteger(L, KSYS_SCANCODE_F8);
     lua_setfield(L, -2, "Scancode_F8");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F9);
+    lua_pushinteger(L, KSYS_SCANCODE_F9);
     lua_setfield(L, -2, "Scancode_F9");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F10);
+    lua_pushinteger(L, KSYS_SCANCODE_F10);
     lua_setfield(L, -2, "Scancode_F10");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F11);
+    lua_pushinteger(L, KSYS_SCANCODE_F11);
     lua_setfield(L, -2, "Scancode_F11");
 
-    lua_pushnumber(L, KSYS_SCANCODE_F12);
+    lua_pushinteger(L, KSYS_SCANCODE_F12);
     lua_setfield(L, -2, "Scancode_F12");
 
-    lua_pushnumber(L, KSYS_SCANCODE_LSHIFT);
+    lua_pushinteger(L, KSYS_SCANCODE_LSHIFT);
     lua_setfield(L, -2, "Scancode_LeftShift");
 
-    lua_pushnumber(L, KSYS_SCANCODE_RSHIFT);
+    lua_pushinteger(L, KSYS_SCANCODE_RSHIFT);
     lua_setfield(L, -2, "Scancode_RightShift");
 
-    lua_pushnumber(L, KSYS_SCANCODE_BACKSLASH);
+    lua_pushinteger(L, KSYS_SCANCODE_BACKSLASH);
     lua_setfield(L, -2, "Scancode_Backslash");
 
-    lua_pushnumber(L, KSYS_SCANCODE_COMMA);
+    lua_pushinteger(L, KSYS_SCANCODE_COMMA);
     lua_setfield(L, -2, "Scancode_Comma");
 
-    lua_pushnumber(L, KSYS_SCANCODE_SLASH);
+    lua_pushinteger(L, KSYS_SCANCODE_SLASH);
     lua_setfield(L, -2, "Scancode_Slash");
 
-    lua_pushnumber(L, KSYS_SCANCODE_LALT);
+    lua_pushinteger(L, KSYS_SCANCODE_LALT);
     lua_setfield(L, -2, "Scancode_LeftAlt");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_RALT);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_RALT);
     lua_setfield(L, -2, "Scancode_RightAlt");
 
-    lua_pushnumber(L, KSYS_SCANCODE_LCTRL);
+    lua_pushinteger(L, KSYS_SCANCODE_LCTRL);
     lua_setfield(L, -2, "Scancode_LeftCtrl");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_RCTRL);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_RCTRL);
     lua_setfield(L, -2, "Scancode_RightCtrl");
 
-    lua_pushnumber(L, KSYS_SCANCODE_CAPSLOCK);
-    lua_setfield(L, -2, "Scancode_Capslock");
+    lua_pushinteger(L, KSYS_SCANCODE_CAPSLOCK);
+    lua_setfield(L, -2, "Scancode_CapsLock");
 
-    lua_pushnumber(L, KSYS_SCANCODE_NUMLOCK);
-    lua_setfield(L, -2, "Scancode_Numlock");
+    lua_pushinteger(L, KSYS_SCANCODE_NUMLOCK);
+    lua_setfield(L, -2, "Scancode_NumLock");
 
-    lua_pushnumber(L, KSYS_SCANCODE_POINT);
+    lua_pushinteger(L, KSYS_SCANCODE_POINT);
     lua_setfield(L, -2, "Scancode_Point");
 
-    lua_pushnumber(L, KSYS_SCANCODE_ENTER);
+    lua_pushinteger(L, KSYS_SCANCODE_ENTER);
     lua_setfield(L, -2, "Scancode_Enter");
 
-    lua_pushnumber(L, KSYS_SCANCODE_ESC);
+    lua_pushinteger(L, KSYS_SCANCODE_ESC);
     lua_setfield(L, -2, "Scancode_Esc");
 
-    lua_pushnumber(L, KSYS_SCANCODE_TAB);
+    lua_pushinteger(L, KSYS_SCANCODE_TAB);
     lua_setfield(L, -2, "Scancode_Tab");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_HOME);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_HOME);
     lua_setfield(L, -2, "Scancode_Home");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_PGUP);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_PGUP);
     lua_setfield(L, -2, "Scancode_PageUp");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_PGDOWN);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_PGDOWN);
     lua_setfield(L, -2, "Scancode_PageDown");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_END);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_END);
     lua_setfield(L, -2, "Scancode_End");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_UP);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_UP);
     lua_setfield(L, -2, "Scancode_Up");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_DOWN);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_DOWN);
     lua_setfield(L, -2, "Scancode_Down");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_LEFT);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_LEFT);
     lua_setfield(L, -2, "Scancode_Left");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_RIGHT);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_RIGHT);
     lua_setfield(L, -2, "Scancode_Right");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_DELETE);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_DELETE);
     lua_setfield(L, -2, "Scancode_Delete");
 
-    lua_pushnumber(L, KSYS_SCANCODE_EXT_INSERT);
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_INSERT);
     lua_setfield(L, -2, "Scancode_Insert");
+
+    lua_pushinteger(L, KSYS_SCANCODE_MINUS);
+    lua_setfield(L, -2, "Scancode_Minus");
+
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_NUMPAD_ENTER);
+    lua_setfield(L, -2, "Scancode_NumpadEnter");
+
+    lua_pushinteger(L, KSYS_SCANCODE_EXT_NUMPAD_DIV);
+    lua_setfield(L, -2, "Scancode_NumpadDiv");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_MULT);
+    lua_setfield(L, -2, "Scancode_NumpadMult");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_MINUS);
+    lua_setfield(L, -2, "Scancode_NumpadMinus");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_PLUS);
+    lua_setfield(L, -2, "Scancode_NumpadPlus");
 }
 
-void syscalls_add_hotkey_states(lua_State *L)
+void syscalls_push_hotkey_states(lua_State *L)
 {
-    
+    lua_pushinteger(L, 0);
+    lua_setfield(L, -2, "hotkeyNoOne");
+
+    lua_pushinteger(L, 1);
+    lua_setfield(L, -2, "hotkeyOnlyOne");
+
+    lua_pushinteger(L, 2);
+    lua_setfield(L, -2, "hotkeyBoth");
+
+    lua_pushinteger(L, 4);
+    lua_setfield(L, -2, "hotkeyLeftOnly");
+
+    lua_pushinteger(L, 5);
+    lua_setfield(L, -2, "hotkeyRightOnly");
 }
 
 LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 
-    syscalls_add_events(L);
-    syscalls_add_slotStates(L);
-    syscalls_add_scancodes(L);
+    syscalls_push_events(L);
+    syscalls_push_slotStates(L);
+    syscalls_push_scancodes(L);
+    syscalls_push_hotkey_states(L);
 
     return 1;
 }
+
+
 
 #endif // LUA_ENABLE_SYSCALLS

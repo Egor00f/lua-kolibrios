@@ -11,11 +11,11 @@
 
 <H1>
 <A HREF="https://www.lua.org/"><IMG SRC="logo.gif" ALT="Lua"></A>
-Lua 5.4 Reference Manual
+Lua 5.4 KolibriOS Reference Manual
 </H1>
 
 <P>
-by Roberto Ierusalimschy, Luiz Henrique de Figueiredo, Waldemar Celes
+by Roberto Ierusalimschy, Luiz Henrique de Figueiredo, Waldemar Celes, (modified) Egor00f
 
 <P>
 <SMALL>
@@ -11568,8 +11568,659 @@ refer to the <code>n2</code>-th upvalue of the Lua closure <code>f2</code>.
 
 
 
+<h2>10 &ndash; <a name="6.11">Syscalls</a></h2>
+
+<p>
+     In this version you can use syscalls. All functions from here are similar to functions from system interrupts.
+     Functions get only integers or strings.
+</p>
+
+<p>
+     About syscalls you can read in <a href="http://wiki.kolibrios.org/wiki/Category:SysCalls">wiki</a>.
+</p>
+
+<p>
+     You can disable syscalls if you build lua without flag <code>-DLUA_ENABLE_SYSCALLS</code>
+</p>
+
+<hr>
+<h3><a name="Syscalls.createWindow"><code>createWindow(x, y, w, h, title, workAreaColor, style)</code></a></h3>
+
+<p>
+     just create define window.
+     Params:
+<ul>
+     <li><code>x</code> &ndash; window x coord</li>
+     <li><code>y</code> &ndash; window y coord</li>
+     <li><code>w</code> &ndash; window width</li>
+     <li><code>h</code> &ndash; window height</li>
+     <li><code>title</code> &ndash; window tiltle</title>
+     <li><code>workAreaColor</code> &ndash; window work area color</li>
+     <li><code>style</code> &ndash; window style</li>
+</ul>
+</p>
+
+<p>
+     The position and size of the window are set the first time this function is called and are ignored on subsequent
+     calls;
+     to change the position and/or size of an already created window, use <a
+          href="#Syscalls.changeWindow"><code>changeWindow</code></a> function
+</p>
+
+<p>
+     The window must fit on the screen. If the passed coordinates and dimensions do not satisfy this condition, then the
+     corresponding coordinate (or possibly both) is considered zero, and if this does not help, then the corresponding
+     size (or possibly both) is set to the screen size.
+</p>
+
+<p>
+     The window dimensions are understood in terms of the coordinates of the lower right corner.
+     The same applies to all other functions. This means that the actual dimensions are 1 pixel larger.
+</p>
+
+<hr>
+<h3><a name="Syscalls.changeWindow"><code>chageWindow(x, y, w, h)</code></a></h3>
+
+<p>
+     A value of <code>-1</code> for the parameter means "do not change"
+</p>
+
+<p>
+     The function call for maximized windows is simply ignored.
+</p>
+
+<hr>
+<h3><a name="Syscalls.setWindowTitle"><code>setWindowTitle(newTitle)</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.startRedraw"><code>startRedraw()</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.endRedraw"><code>endRedraw()</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.defineButton"><code>defineButton(x, y, w, h, id, color)</code></a></h3>
+
+<p>
+     The button size must be greater than 0 and less than 0x8000.
+</p>
+
+<p>
+     For windows with a skin, when defining a window (calling the 0th function), two standard buttons are created -
+     closing the window with the ID 1 and minimizing the window with the ID 0xffff.
+</p>
+
+<p>
+     Creating two buttons with the same IDs is quite acceptable.
+</p>
+
+<p>
+     The button with the ID 0xffff, when pressed, is interpreted by the system as a minimization button, the system
+     processes
+     such a press independently, without accessing the application.
+</p>
+
+<p>
+     Otherwise, it is a regular button.
+</p>
+
+<p>
+     The total number of buttons for all applications is limited to 4095.
+</p>
+
+<hr>
+<h3><a name="Syscalls.deleteButton"><code>deleteButton(id)</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.getButton"><code>getButton()</code></a></h3>
+
+<p>
+     Takes the code of the pressed button from the buffer and code of pressed button. If buffer is empty return
+     <code>nil, nil</code>.
+</p>
+
+<p>
+     When this function is called by an application with an inactive window, the response <code>nil, nil</code> is
+     returned.
+</p>
+
+<hr>
+<h3><a name="Syscalls.checkEvent"><code>checkEvent()</code></a></h3>
+
+<p>
+     If there is an event in the message queue, reads it and returns it. If the queue is empty, returns zero.
+</p>
+
+<p>
+     Return <a href="#Syscalls.Events"><code>event code</code></a>.
+</p>
 
 
+<hr>
+<h3><a name="Syscalls.waitEvent"><code>waitEvent()</code></a></h3>
+
+<p>
+     If the message queue is empty, then waits for a message to appear in the queue. In this state, the thread does not
+     receive processor time. Then reads the message from the queue.
+</p>
+
+<p>
+     Return <a href="#Syscalls.Events"><code>event code</code></a>.
+</p>
+
+
+<hr>
+<h3><a name="Syscalls.waitEventTimeout"><code>waitEventTimeout(timeout)</code></a></h3>
+
+<p>
+     If the message queue is empty, waits for a message to appear in the queue, but no more than the specified time.
+     Then
+     reads the message from the queue.
+</p>
+
+<p>
+     Params:
+<ul>
+     <li><code>timeout</code> - timeout (in hundredths of a second)</li>
+</ul>
+</p>
+
+<p>
+     Return <a href="#Syscalls.Events"><code>event code</code></a>.
+</p>
+
+
+<hr>
+<h3><a name="Syscalls.drawLine"><code>drawLine(XStart, YStart, XEnd, YEnd, color)</code></a></h3>
+
+<p>
+     draw line in window.
+</p>
+
+<hr>
+<h3><a name="Syscalls.drawPixel"><code>drawPixel(x, y, color)</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.drawText"><code>drawText(text, x, y, color)</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.drawRectangle"><code>drawRectangle(x, y, w, h, color)</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.getSystemColors"><code>getSystemColors()</code></a></h3>
+
+<hr>
+<h3><a name="Syscalls.getKey"><code>getKey()</code></a></h3>
+
+<p>
+     Takes the code of the pressed key from the buffer.
+</p>
+
+<p>
+     Return string with pressed button or <a href="#Syscalls.Scancodes"><code>scancode</code></a> or <code>nil</code>
+     and hotkey or <code>nil</code>
+</p>
+
+<p>
+     There is a system-wide buffer of 120 bytes of keystrokes, organized as a queue.
+</p>
+
+<p>
+     There is another system-wide buffer of 120 "hot keys".
+</p>
+
+<p>
+     However, hot keys are always returned as scancodes.
+</p>
+<p>
+     You can find out which key combinations correspond to which codes by running the keyascii and scancode
+     applications.
+</p>
+<p>
+     <a href="#Syscalls.Scancodes"><code>Scancodes</code></a> are returned directly by the keyboard and are fixed;
+</p>
+
+<hr>
+<h3><a name="Syscalls.Scancodes"><code>Scancodes</code></a></h3>
+
+<p>
+     Cnscode is just number. Names of Scancodes: <code>Scancode_*</code>
+</p>
+
+<p>
+     List of all Scancodes:
+<ul>
+     <li><code>Scancode_0</code></li>
+     <li><code>Scancode_1</code></li>
+     <li><code>Scancode_2</code></li>
+     <li><code>Scancode_3</code></li>
+     <li><code>Scancode_4</code></li>
+     <li><code>Scancode_5</code></li>
+     <li><code>Scancode_6</code></li>
+     <li><code>Scancode_7</code></li>
+     <li><code>Scancode_8</code></li>
+     <li><code>Scancode_9</code></li>
+     <li><code>Scancode_A</code></li>
+     <li><code>Scancode_B</code></li>
+     <li><code>Scancode_C</code></li>
+     <li><code>Scancode_D</code></li>
+     <li><code>Scancode_E</code></li>
+     <li><code>Scancode_F</code></li>
+     <li><code>Scancode_G</code></li>
+     <li><code>Scancode_H</code></li>
+     <li><code>Scancode_J</code></li>
+     <li><code>Scancode_K</code></li>
+     <li><code>Scancode_L</code></li>
+     <li><code>Scancode_M</code></li>
+     <li><code>Scancode_N</code></li>
+     <li><code>Scancode_O</code></li>
+     <li><code>Scancode_P</code></li>
+     <li><code>Scancode_Q</code></li>
+     <li><code>Scancode_R</code></li>
+     <li><code>Scancode_S</code></li>
+     <li><code>Scancode_T</code></li>
+     <li><code>Scancode_U</code></li>
+     <li><code>Scancode_V</code></li>
+     <li><code>Scancode_W</code></li>
+     <li><code>Scancode_X</code></li>
+     <li><code>Scancode_Y</code></li>
+     <li><code>Scancode_Z</code></li>
+     <li><code>Scancode_F1</code></li>
+     <li><code>Scancode_F2</code></li>
+     <li><code>Scancode_F3</code></li>
+     <li><code>Scancode_F4</code></li>
+     <li><code>Scancode_F5</code></li>
+     <li><code>Scancode_F6</code></li>
+     <li><code>Scancode_F7</code></li>
+     <li><code>Scancode_F8</code></li>
+     <li><code>Scancode_F9</code></li>
+     <li><code>Scancode_F10</code></li>
+     <li><code>Scancode_F11</code></li>
+     <li><code>Scancode_F12</code></li>
+     <li><code>Scancode_LeftShift</code></li>
+     <li><code>Scancode_RightShift</code></li>
+     <li><code>Scancode_Backslash</code></li>
+     <li><code>Scancode_Comma</code></li>
+     <li><code>Scancode_Slash</code></li>
+     <li><code>Scancode_LeftAlt</code></li>
+     <li><code>Scancode_RightAlt</code></li>
+     <li><code>Scancode_LeftCtrl</code></li>
+     <li><code>Scancode_RightCtrl</code></li>
+     <li><code>Scancode_CapsLock</code></li>
+     <li><code>Scancode_NumLock</code></li>
+     <li><code>Scancode_Point</code></li>
+     <li><code>Scancode_Enter</code></li>
+     <li><code>Scancode_Esc</code></li>
+     <li><code>Scancode_Tab</code></li>
+     <li><code>Scancode_Home</code></li>
+     <li><code>Scancode_PageUp</code></li>
+     <li><code>Scancode_PageDown</code></li>
+     <li><code>Scancode_End</code></li>
+     <li><code>Scancode_Up</code></li>
+     <li><code>Scancode_Down</code></li>
+     <li><code>Scancode_Left</code></li>
+     <li><code>Scancode_Right</code></li>
+     <li><code>Scancode_Delete</code></li>
+     <li><code>Scancode_Insert</code></li>
+     <li><code>Scancode_Minus</code></li>
+     <li><code>Scancode_NumpadEnter</code></li>
+     <li><code>Scancode_NumpadDiv</code></li>
+     <li><code>Scancode_NumpadMult</code></li>
+     <li><code>Scancode_NumpadMinus</code></li>
+     <li><code>Scancode_NumpadPlus</code></li>
+</ul>
+</p>
+
+<hr>
+<h3><a name="Syscalls.Events"><code>Events</code></a></h3>
+
+<p>
+     Returning by functions <a href="#Syscalls.waitEvent"><code>waitEvent</code></a>, <a
+          href="#Syscalls.waitEventTimeout"><code>waitEventTimeout</code></a> and <a
+          href="#Syscalls.checkEvent"><code>checkEvent</code></a>
+</p>
+
+<p>
+     List of all Events:
+<ul>
+     <li><code>EventNone</code></li>
+     <li><code>EventRedraw</code></li>
+     <li><code>EventKey</code></li>
+     <li><code>EventButton</code></li>
+     <li><code>EventDesktop</code></li>
+     <li><code>EventMouse</code></li>
+     <li><code>EventIPC</code></li>
+     <li><code>EventNetwork</code></li>
+     <li><code>EventDebug</code></li>
+     <li><code>EventIRQBegin</code></li>
+</ul>
+</p>
+
+<hr>
+<h3><a name="Syscalls.getMouseButtons"><code>getMouseButtons()</code></a></h3>
+
+<p>
+     Return table of booleans:
+</p>
+
+<code>
+     {<br>
+          LeftButton,    --pressed left mouse button <br>
+          RightButton,   --pressed right mouse button<br>
+          MiddleButton,  --pressed midle mouse button<br>
+          Button4,       --pressed 4 mouse button<br>
+          Button5        --pressed 5 mouse button<br>
+     }
+</code>
+
+<hr>
+<h3><a name="Syscalls.getMouseEvents"><code>getMouseEvents()</code></a></h3>
+
+<p>
+     Return table of booleans:
+</p>
+
+<code>
+     {<br>
+          LeftButton,    --pressed left mouse button<br>
+          RightButton,   --pressed right mouse button<br>
+          MiddleButton,  --pressed midle mouse button<br>
+          Button4,       --pressed 4 mouse button<br>
+          Button5,       --pressed 5 mouse button<br>
+          getMouseEvents,<br>
+          RightButtonPressed,<br>
+          MiddleButtonPressed,<br>
+          VerticalScroll,<br>
+          LeftButtonReleased,<br>
+          RightButtonReleased,<br>
+          MidleButtonReleased,<br>
+          HorizontalScroll,<br>
+          DoubleClick<br>
+     }
+</code>
+
+<hr>
+<h3><a name="Syscalls.getMousePositionScreen"><code>getMousePositionScreen()</code></a></h3>
+
+<p>
+     Get mouse position on screen.
+</p>
+
+<p>
+     Return table:
+     
+</p>
+<code>
+     {<br>
+          x,   -- mouse coord by X axis on screen<br>
+          y,   -- mouse coord by Y axis on screen<br>
+     }
+</code>
+
+<hr>
+<h3><a name="Syscalls.getMousePositionWindow"><code>getMousePositionWindow()</code></a></h3>
+
+<p>
+     Get mouse position in window.
+</p>
+
+<p></p>
+     Return table:
+     
+</p>
+<code>
+     {<br>
+          x,   -- mouse coord by X axis in window<br>
+          y,   -- mouse coord by Y axis in window<br>
+     }
+</code>
+
+<hr>
+<h3><a name="Syscalls.getMouseWheels"><code>getMouseWheels()</code></a></h3>
+
+<p>
+     Get mouse wheels offset.
+</p>
+
+<p>
+     The data is available only to the active window.
+</p>
+
+<p>
+     After reading, the values are reset.
+</p>
+
+<p>
+Return table:
+</p>
+
+<code>
+     {<br>
+          x,   -- mouse wheels offset by X axis<br>
+          y    -- mouse wheels offset by Y axis<br>
+     }
+</code>
+
+<hr>
+<h3><a name="Syscalls.GetMouseSettings"><code>GetMouseSettings()</code></a></h3>
+
+<p>
+     Get mouse settings.
+</p>
+
+<p>
+     Return table:
+</p>
+
+<code>
+     {<br>
+          speed, -- mouse speed <br>
+          sensetivity,   -- mouse sensetivity<br>
+          doubleClickDelay -- mouse double click delay<br>
+     }
+</code>
+
+<hr>
+<h3><a name="Syscalls.GetMouseSpeed"><code>GetMouseSpeed()</code></a></h3>
+
+<p>
+     Return mouse speed.
+</p>
+
+
+<hr>
+<h3><a name="Syscalls.GetMouseSens"><code>GetMouseSens()</code></a></h3>
+
+<p>
+     Return mouse sensetivity.
+</p>
+
+<hr>
+<h3><a name="Syscalls.GetMouseDoubleClickDelay"><code>GetMouseDoubleClickDelay()</code></a></h3>
+
+<p>
+     Return mouse double click delay.
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetMouseSettings"><code>SetMouseSettings(settings)</code></a></h3>
+
+<p>
+     Set mouse settings.
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>settings</code> &ndash; table: <br>
+               <code>
+                    {<br>
+                         speed, -- mouse speed <br>
+                         sensetivity, -- mouse sensetivity<br>
+                         doubleClickDelay -- mouse double click delay<br>
+                    }
+               </code>
+          </li>
+     </ul>
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetMouseSpeed"><code>SetMouseSpeed(speed)</code></a></h3>
+
+<p>
+     Set mouse speed.
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetMouseSens"><code>SetMouseSens(sens)</code></a></h3>
+
+<p>
+     Set mouse sensetivity.
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetMouseDoubleClickDelay"><code>SetMouseDoubleClickDelay(delay)</code></a></h3>
+
+<p>
+     Set mouse double click delay.
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetMousePos"><code>SetMousePos(x, y)</code></a></h3>
+
+<p>
+     Set mouse position.
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>x</code> &ndash; mouse coord by X axis</li>
+          <li><code>y</code> &ndash; mouse coord by Y axis</li>
+     </ul>
+</p>
+
+<hr>
+<h3><a name="Syscalls.LoadCursor"><code>LoadCursor(pathToCur, x, y)</code></a></h3>
+
+<p>
+     Load cursor
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>pathToCur</code> &ndash; path to cursor file</li>
+          <li><code>x</code> &ndash; x coord "hot point"</li>
+          <li><code>y</code> &ndash; y coord "hot point"</li>
+     </ul>
+</p>
+
+<p>
+     Return cursor handle
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetCursor"><code>SetCursor(handle)</code></a></h3>
+
+<p>
+     Set cursor.
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>handle</code> &ndash; value that returned by <a href="#Syscalls.LoadCursor"><code>LoadCursor</code></a></li>
+     </ul>
+</p>
+
+<p>
+     Return last cursor handle
+</p>
+
+<hr>
+<h3><a name="Syscalls.DeleteCursor"><code>DeleteCursor(handle)</code></a></h3>
+
+<p>
+     Delete loaded cursor.
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>handle</code> &ndash; value that returned by <a href="#Syscalls.LoadCursor"><code>LoadCursor</code></a></li>
+     </ul>
+</p>
+
+<hr>
+<h3><a name="Syscalls.SetHotKey"><code>SetHotKey(hotkey)</code></a></h3>
+
+<p>
+     Set hot key.
+</p>
+
+<p>
+     A hotkey can be triggered either by pressing or by releasing. The key release scancode is 128 higher than the key press
+     scancode (i.e. the most significant bit is set).
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>hotkey</code> &ndash; table:<br>
+               <code>
+                    {<br>
+                         Scancode, -- scancode value<br>
+                         Shift,    -- value from <a href="#Syscalls.HotKeys">HotKey</a> for shift<br>
+                         Ctrl,     -- value from <a href="#Syscalls.HotKeys">HotKey</a> for ctrl<br>
+                         Alt,    -- value from <a href="#Syscalls.HotKeys">HotKey</a> for alt<br>
+                    }
+               </code>
+          </li>
+     </ul>
+</p>
+
+<hr>
+<h3><a name="Syscalls.DeleteHotKey"><code>DeleteHotKey(hotkey)</code></a></h3>
+
+<p>
+     Delete hot key
+</p>
+
+<p>
+     Params:
+     <ul>
+          <li><code>hotkey</code> &ndash; table:<br>
+               <code>
+                    {<br>
+                         Scancode, -- scancode value<br>
+                         Shift,    -- value from <a href="#Syscalls.HotKeys">HotKey</a> for shift<br>
+                         Ctrl,     -- value from <a href="#Syscalls.HotKeys">HotKey</a> for ctrl<br>
+                         Alt,    -- value from <a href="#Syscalls.HotKeys">HotKey</a> for alt<br>
+                    }
+               </code>
+          </li>
+     </ul>
+</p>
+
+<p>
+     Calling the function does not affect other applications. If another application has defined the same combination, it
+     will still receive notifications.
+</p>
+
+<hr>
+<h3><a name="Syscalls.HotKeys"><code>HotKeys</code></a></h3>
+
+<p>
+     HotKeys values:
+     <ul>
+          <li><code>hotkeyNoOne</code> &ndash; no one control key pressed</li>
+          <li><code>hotkeyOnlyOne</code> &ndash; only one control key pressed</li>
+          <li><code>hotkeyBoth</code> &ndash; 2 control keys pessed both</li>
+          <li><code>hotkeyLeftOnly</code> only left control key pressed&ndash; </li>
+          <li><code>hotkeyRightOnly</code> &ndash; only right control key pressed</li>
+     </ul>
+</p>
 
 
 <h1>7 &ndash; <a name="7">Lua Standalone</a></h1>
@@ -12045,12 +12696,9 @@ and LiteralString, see <a href="#3.1">&sect;3.1</a>.)
 
 
 
-
-
-
 <P CLASS="footer">
 Last update:
-Thu Jun 13 22:15:52 UTC 2024
+Thu Jun 3 14:42:52 UTC 2025
 </P>
 <!--
 Last change: revised for Lua 5.4.7
