@@ -142,46 +142,14 @@ If you get link errors after that,
 then try "<KBD>make linux-readline MYLIBS=-ltermcap</KBD>".
 
 <H3>Installing Lua</H3>
-<P>
-  Once you have built Lua, you may want to install it in an official
-  place in your system. In this case, do "<KBD>make install</KBD>". The official
-  place and the way to install files are defined in the <TT>Makefile</TT>. You'll
-  probably need the right permissions to install files, and so may need to do "<KBD>sudo make install</KBD>".
 
-<P>
-  To build and install Lua in one step, do "<KBD>make all install</KBD>",
-  or "<KBD>make xxx install</KBD>",
-  where xxx is your platform name.
+<p>
+  For installing just move <code>lua54.dll</code> to <code>/kolibrios/lib</code> folder. And add builded lua exe to any folder of kolibrios filesystem.
+</p>
 
-<P>
-  To install Lua locally after building it, do "<KBD>make local</KBD>".
-  This will create a directory <TT>install</TT> with subdirectories
-  <TT>bin</TT>, <TT>include</TT>, <TT>lib</TT>, <TT>man</TT>, <TT>share</TT>,
-  and install Lua as listed below.
-
-  To install Lua locally, but in some other directory, do
-  "<KBD>make install INSTALL_TOP=xxx</KBD>", where xxx is your chosen directory.
-  The installation starts in the <TT>src</TT> and <TT>doc</TT> directories,
-  so take care if <TT>INSTALL_TOP</TT> is not an absolute path.
-
-<DL CLASS="display">
-<DT>
-    bin:
-<DD>
-    lua luac
-<DT>
-    include:
-<DD>
-    lua.h luaconf.h lualib.h lauxlib.h lua.hpp
-<DT>
-    lib:
-<DD>
-    liblua.a
-<DT>
-    man/man1:
-<DD>
-    lua.1 luac.1
-</DL>
+<p>
+  path to install libraries for lua in <code>/kolibrios/lib/lua</code>
+</p>
 
 <P>
   These are the only directories you need for development.

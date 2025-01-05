@@ -11580,7 +11580,10 @@ refer to the <code>n2</code>-th upvalue of the Lua closure <code>f2</code>.
 </p>
 
 <p>
-     You can disable syscalls if you build lua without flag <code>-DLUA_ENABLE_SYSCALLS</code>
+     For use syscalls you must require it. Example: 
+     <code>
+          local syscalls = require("syscalls") 
+     </code>
 </p>
 
 <p>
