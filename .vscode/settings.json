@@ -7,7 +7,8 @@
         "string.h": "c",
         "ksys.h": "c",
         "lualib.h": "c",
-        "lprefix.h": "c"
+        "lprefix.h": "c",
+        "newlib.h": "c"
     },
     "editor.formatOnSave": false,
     "cSpell.enabled": true,

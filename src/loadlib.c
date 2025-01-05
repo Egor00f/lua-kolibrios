@@ -229,12 +229,14 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 
 #define DLMSG	"dynamic libraries not enabled; check your Lua installation"
 
+extern void* load_library(const char *name);
+extern void *get_proc_address(void *handle, const char *proc_name);
 
 static void lsys_unloadlib (void *lib) {
   _ksys_free(lib);
 }
 
-void pusherror(lua_State *L, const char* error)
+void pushError(lua_State *L, const char* error)
 {
   char message[128] = "Error: ";
   strcat(message, error);
@@ -242,19 +244,23 @@ void pusherror(lua_State *L, const char* error)
 }
 
 static void *lsys_load (lua_State *L, const char *path, int seeglb) {
-  void *lib = _ksys_dlopen(path);
+  void *lib = load_library(path);
   (void)(seeglb); /* not used: symbols are 'global' by default */
   if (lib == NULL)
-    pusherror(L, "can't load library");
+    pushError(L, "can't load library");
   return lib;
 }
 
 
 static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
-  lua_CFunction f = _ksys_dlsym(lib, sym);
+  lua_CFunction f = get_proc_address(lib, sym);
   if(f == NULL)
-    pusherror(L, "can't find function");
-  return NULL;
+  {
+    char buff[128] = "can't find function: \0";
+    strcat(buff, sym);
+    pushError(L, buff);
+  }
+  return f;
 }
 
 /* }====================================================== */

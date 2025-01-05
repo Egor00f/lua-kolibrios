@@ -16,7 +16,9 @@ CFLAGS=$(SYSCFLAGS) -O2 -Wall -Wextra -DLUA_COMPAT_5_3 $(STD) $(MYCFLAGS)
 LDFLAGS=$(SYSLDFLAGS) $(MYLDFLAGS)
 LIBS=$(SYSLIBS) $(MYLIBS)
 
-AR= kos32-ar rcu
+ARFLAGS = rcu
+
+AR= kos32-ar 
 RANLIB= ranlib
 RM= rm -f
 UNAME= uname
@@ -38,10 +40,10 @@ NewLib_DIR=$(SDK_DIR)/sources/newlib
 SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include
 SYSLDFLAGS=--image-base 0 -Tapp-dynamic.lds
 SYSLIBS=-nostdlib -L $(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
-MYCFLAGS=-DLUA_ENABLE_SYSCALLS
+MYCFLAGS=
 MYLDFLAGS=
 MYLIBS=
-MYOBJS=lsyscalls.o
+MYOBJS=
 
 # Special flags for compiler modules; -Os reduces code size.
 CMCFLAGS= 
@@ -65,12 +67,12 @@ LUAC_O=	luac.o
 LUA_S = lua54.dll
 
 
-ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
+ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O) lsyscalls.o
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
-ALL_S= $(LUA_S)  $(LUA_S)
+ALL_S= $(LUA_S) $(LUA_S) syscalls.dll
 
-default: shared
+default: shared $(LUA_A) syscalls.dll
 
 o:	$(ALL_O)
 
@@ -79,7 +81,7 @@ a:	$(ALL_A)
 # Static lib
 $(LUA_A): $(BASE_O)
 
-	$(AR) $@ $(BASE_O)
+	$(AR) $(ARFLAGS) $@ $(BASE_O)
 
 # static lua
 $(LUA_T): $(LUA_O) $(LUA_A)
@@ -95,21 +97,24 @@ $(LUAC_T): $(LUAC_O) $(LUA_A)
 
 # Shared lib
 $(LUA_S): $(BASE_O)
-	$(CC) -shared -o $@ $(BASE_O) $(SYSLIBS)
-	$(STRIP) --strip-unneeded $@ $(BASE_O)
+	$(LD) -shared -T dll.lds --entry _DllStartup -o $@ $(BASE_O) $(SYSLIBS)
+
 
 # shared lua
 $(LUA_T_S): $(LUA_O) $(LUA_S)
-	$(LD) $(LDFLAGS) -o $@ $(LUA_O) $(LUA_S) $(LIBS) 
+	$(LD) -s $(LDFLAGS) -o $@ $(LUA_O) $(LUA_S) $(LIBS) 
 	$(STRIP) -S $@
 	$(OBJCOPY) $@ -O binary
 
 static: $(ALL_T)
 
 shared: 
-	$(MAKE) "MYLDFLAGS=$(MYLDFLAGS) -s" \
+	$(MAKE) "ARFLAGS=crs" \
 	"LUA_T_S = lua" "LUA_T= " lua
 	$(MAKE) "LUAC_T=luac" luac
+
+syscalls.dll: lsyscalls.o $(LUA_S)
+	$(CC) -shared -T dll.lds --entry _DllStartup -o $@ lsyscalls.o $(LUA_S) $(SYSLIBS)
 
 test:
 	./$(LUA_T) -v
