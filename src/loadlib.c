@@ -260,7 +260,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
     strcat(buff, sym);
     pushError(L, buff);
   }
-  return NULL;
+  return f;
 }
 
 /* }====================================================== */

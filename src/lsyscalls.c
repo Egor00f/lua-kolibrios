@@ -1205,7 +1205,7 @@ static void syscalls_push_hotkey_states(lua_State *L)
     lua_setfield(L, -2, "hotkeyRightOnly");
 }
 
-LUALIB_API int luaopen_lsyscalls(lua_State *L)
+LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 

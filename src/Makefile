@@ -70,9 +70,9 @@ LUA_S = lua54.dll
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O) lsyscalls.o
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
-ALL_S= $(LUA_S) $(LUA_S) lsyscalls.dll
+ALL_S= $(LUA_S) $(LUA_S) syscalls.dll
 
-default: shared $(LUA_A) lsyscalls.dll
+default: shared $(LUA_A) syscalls.dll
 
 o:	$(ALL_O)
 
@@ -113,7 +113,7 @@ shared:
 	"LUA_T_S = lua" "LUA_T= " lua
 	$(MAKE) "LUAC_T=luac" luac
 
-lsyscalls.dll: lsyscalls.o $(LUA_S)
+syscalls.dll: lsyscalls.o $(LUA_S)
 	$(CC) -shared -T dll.lds --entry _DllStartup -o $@ lsyscalls.o $(LUA_S) $(SYSLIBS)
 
 test:

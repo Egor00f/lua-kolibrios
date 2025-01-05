@@ -211,9 +211,9 @@
 
 #if !defined(LUA_CPATH_DEFAULT)
 #define LUA_CPATH_DEFAULT                     \
-	LUA_CDIR "?.dll;" LUA_CDIR "loadall.obj;" \
-			 "/kolibrios/lib/lua/?.obj;"      \
-			 "./?.obj"
+	LUA_CDIR "?.dll;" LUA_CDIR "loadall.dll;" \
+			 "/kolibrios/lib/lua/?.dll;"      \
+			 "./?.dll"
 #endif
 
 /*
