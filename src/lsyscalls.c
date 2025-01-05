@@ -2,9 +2,6 @@
     syscalls
 */
 
-
-#ifdef LUA_ENABLE_SYSCALLS
-
 #include <string.h>
 
 #include "lua.h"
@@ -850,7 +847,7 @@ static const luaL_Reg syscallsLib[] = {
     {"DeleteCursor", syscalls_DeleteCursor},
     {NULL, NULL}};
 
-void syscalls_push_events(lua_State *L)
+static void syscalls_push_events(lua_State *L)
 {
     lua_pushinteger(L, KSYS_EVENT_NONE);
     lua_setfield(L, -2, "EventNone");
@@ -883,7 +880,7 @@ void syscalls_push_events(lua_State *L)
     lua_setfield(L, -2, "EventIRQBegin");
 }
 
-void syscalls_push_buttonCodes(lua_State *L)
+static void syscalls_push_buttonCodes(lua_State *L)
 {
     lua_pushinteger(L, KSYS_MOUSE_LBUTTON_PRESSED);
     lua_setfield(L, -2, "LeftButton");
@@ -901,7 +898,7 @@ void syscalls_push_buttonCodes(lua_State *L)
     lua_setfield(L, -2, "Button5");
 }
 
-void syscalls_push_slotStates(lua_State *L)
+static void syscalls_push_slotStates(lua_State *L)
 {
     lua_pushinteger(L, KSYS_SLOT_STATE_RUNNING);
     lua_setfield(L, -2, "stateRunning");
@@ -1190,7 +1187,7 @@ void syscalls_push_scancodes(lua_State *L)
 }
 
 
-void syscalls_push_hotkey_states(lua_State *L)
+static void syscalls_push_hotkey_states(lua_State *L)
 {
     lua_pushinteger(L, 0);
     lua_setfield(L, -2, "hotkeyNoOne");
@@ -1208,7 +1205,7 @@ void syscalls_push_hotkey_states(lua_State *L)
     lua_setfield(L, -2, "hotkeyRightOnly");
 }
 
-LUALIB_API int luaopen_syscalls(lua_State *L)
+LUALIB_API int luaopen_lsyscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
 
@@ -1221,7 +1218,3 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
 
     return 1;
 }
-
-
-
-#endif // LUA_ENABLE_SYSCALLS
