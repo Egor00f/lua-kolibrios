@@ -11583,6 +11583,39 @@ refer to the <code>n2</code>-th upvalue of the Lua closure <code>f2</code>.
      You can disable syscalls if you build lua without flag <code>-DLUA_ENABLE_SYSCALLS</code>
 </p>
 
+<p>
+     Gui Hello world on lua:
+     <code>
+local systemColors = syscalls.getSystemColors()<br>
+<br>
+function redraw()<br>
+	syscalls.startRedraw()<br>
+<br>
+	syscalls.createWindow(100, 100, 200, 200, "test", systemColors.workArea, 3)<br>
+<br>
+	syscalls.drawText("Hello World", 64, 64, systemColors.workText)<br>
+<br>
+	syscalls.endRedraw()<br>
+end<br>
+<br>
+redraw()<br>
+<br>
+local exit = false<br>
+while not exit do<br>
+	local event = syscalls.waitEvent()<br>
+<br>
+	if event == syscalls.EventRedraw then<br>
+		redraw()<br>
+	elseif event == syscalls.EventButton then<br>
+		if syscalls.getButton() == 1 then<br>
+			exit = true<br>
+		end<br>
+	end<br>
+end<br>
+<br>
+     </code>
+</p>
+
 <hr>
 <h3><a name="Syscalls.createWindow"><code>createWindow(x, y, w, h, title, workAreaColor, style)</code></a></h3>
 

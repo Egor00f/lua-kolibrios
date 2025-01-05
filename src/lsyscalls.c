@@ -1157,7 +1157,38 @@ void syscalls_push_scancodes(lua_State *L)
 
     lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_PLUS);
     lua_setfield(L, -2, "Scancode_NumpadPlus");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_0);
+    lua_setfield(L, -2, "Scancode_Numpad_0");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_1);
+    lua_setfield(L, -2, "Scancode_Numpad_1");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_2);
+    lua_setfield(L, -2, "Scancode_Numpad_2");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_3);
+    lua_setfield(L, -2, "Scancode_Numpad_3");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_4);
+    lua_setfield(L, -2, "Scancode_Numpad_4");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_5);
+    lua_setfield(L, -2, "Scancode_Numpad_5");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_6);
+    lua_setfield(L, -2, "Scancode_Numpad_6");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_7);
+    lua_setfield(L, -2, "Scancode_Numpad_7");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_8);
+    lua_setfield(L, -2, "Scancode_Numpad_8");
+
+    lua_pushinteger(L, KSYS_SCANCODE_NUMPAD_9);
+    lua_setfield(L, -2, "Scancode_Numpad_9");
 }
+
 
 void syscalls_push_hotkey_states(lua_State *L)
 {
