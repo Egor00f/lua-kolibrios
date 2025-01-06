@@ -10,19 +10,52 @@
 
 #include <sys/ksys.h>
 
-ksys_key_input_mode_t syscalls_KeyInputState = KSYS_KEY_INPUT_MODE_ASCII;
+static ksys_key_input_mode_t syscalls_KeyInputState = KSYS_KEY_INPUT_MODE_ASCII;
+
+/*
+    Кеш размера экрана.
+
+    Нужно для того чтобы не вызывать систменое прерывание лишний раз (другие функции тоже используют это значение)
+
+    Сомневаюсь что в размер экрана в колибри вообще может меняться без перезагрузки
+
+    обновляется функцией syscalls_updateScreenSize
+*/
+static ksys_pos_t syscalls_screenSizeCache = {0};
 
 static int syscalls_createWindow(lua_State *L)
 {
-    _ksys_create_window(
-        luaL_checkinteger(L, 1), 
-        luaL_checkinteger(L, 2), 
-        luaL_checkinteger(L, 3), 
-        luaL_checkinteger(L, 4), 
-        luaL_checkstring(L, 5), 
-        luaL_checkinteger(L, 6), 
-        luaL_checkinteger(L, 7)
-    );
+    uint32_t x = luaL_checkinteger(L, 1);
+    uint32_t y = luaL_checkinteger(L, 2);
+    uint32_t w = luaL_checkinteger(L, 3);
+    uint32_t h = luaL_checkinteger(L, 4);
+    ksys_color_t workcolor = luaL_checkinteger(L, 6);
+    uint32_t style = luaL_checkinteger(L, 7);
+
+    if (style == 0 || style == 2)
+    {
+        uint32_t borderColor = luaL_checkinteger(L, 5);
+        uint32_t titleColor = luaL_checkinteger(L, 8);
+        asm_inline(
+            "int $0x40"
+            :: "a"(0),
+            "b"((x << 16) | ((w - 1) & 0xFFFF)),
+            "c"((y << 16) | ((h - 1) & 0xFFFF)),
+            "d"((style << 24) | (workcolor & 0xFFFFFF)),
+            "D"(borderColor),
+            "S"(titleColor)
+            : "memory"
+        );
+    }
+    else
+    {
+        _ksys_create_window(
+            x, y, w, h,
+            luaL_checkstring(L, 5),
+            workcolor,
+            style
+        );
+    }
 
     return 0;
 }
@@ -60,6 +93,64 @@ static int syscalls_endRedraw(lua_State *L)
     return 0;
 }
 
+static int syscalls_SetSkin(lua_State *L)
+{
+    uint ret;
+    asm_inline(
+        "int $0x40"
+        :"=a"(ret)
+        :"a"(48), "b"(8), "c"(luaL_checkstring(L, 1))
+    );
+
+    lua_pushinteger(L, ret);
+
+    return 1;
+}
+
+static int syscalls_GetSkinTilteArea(lua_State *L)
+{
+    ksys_pos_t leftRight, topBottom;
+
+    asm_inline(
+        "int $0x40"
+        :"=a"(leftRight), "=b"(topBottom)
+        :"a"(48), "b"(7)
+    );
+
+    lua_createtable(L, 0, 4);
+
+    lua_pushinteger(L, leftRight.x);
+    lua_setfield(L, -2, "Left");
+
+    lua_pushinteger(L, leftRight.y);
+    lua_setfield(L, -2, "Right");
+
+    lua_pushinteger(L, topBottom.x);
+    lua_setfield(L, -2, "Top");
+
+    lua_pushinteger(L, topBottom.y);
+    lua_setfield(L, -2, "Bottom");
+
+    return 1;
+}
+
+static int syscalls_SetWorkArea(lua_State *L)
+{
+
+    uint32_t left = luaL_checkinteger(L, 1);
+    uint32_t top = luaL_checkinteger(L, 2);
+    uint32_t right = luaL_checkinteger(L, 3);
+    uint32_t bottom = luaL_checkinteger(L, 4);
+
+    asm_inline(
+        "int $0x40"
+        ::"a"(48), "b"(6), "c"(left * 65536 + right), "d"(top * 65536 + bottom)
+    );
+
+    return 0;
+}
+
+
 static int syscalls_defineButton(lua_State *L)
 {
     _ksys_define_button(
@@ -77,6 +168,15 @@ static int syscalls_defineButton(lua_State *L)
 static int syscalls_deleteButton(lua_State *L)
 {
     _ksys_delete_button(luaL_checkinteger(L, 1));
+
+    return 0;
+}
+
+static int syscalls_SetButtonsStyle(lua_State *L)
+{
+    uint32_t style = luaL_checkinteger(L, 1);
+        asm_inline(
+            "int $0x40" ::"a"(48), "b"(1), "c"(style));
 
     return 0;
 }
@@ -259,16 +359,21 @@ static int syscalls_getButton(lua_State *L)
     return 2;
 }
 
+static void syscalls_updateScreenSize()
+{
+    syscalls_screenSizeCache = _ksys_screen_size();
+}
+
 static int syscalls_screenSize(lua_State *L)
 {
-    ksys_pos_t size = _ksys_screen_size();
+    syscalls_updateScreenSize();
 
     lua_createtable(L, 0, 2);
 
-    lua_pushinteger(L, size.x);
+    lua_pushinteger(L, syscalls_screenSizeCache.x);
     lua_setfield(L, -2, "x");
 
-    lua_pushinteger(L, size.y);
+    lua_pushinteger(L, syscalls_screenSizeCache.y);
     lua_setfield(L, -2, "y");
 
     return 1;
@@ -349,6 +454,27 @@ static int syscalls_drawRectangle(lua_State *L)
     return 0;
 }
 
+static int syscalls_ReadPoint(lua_State *L)
+{
+    ksys_color_t color;
+
+    if(syscalls_screenSizeCache.val == 0)
+        syscalls_updateScreenSize();
+
+    uint32_t x = luaL_checkinteger(L, 1);
+    uint32_t y = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $ 0x40"
+        : "=a"(color)
+        : "a"(35), "b"(x * syscalls_screenSizeCache.x + y)
+    );
+
+    lua_pushnumber(L, color);
+
+    return 1;
+}
+
 static int syscalls_getSystemColors(lua_State *L)
 {
     ksys_colors_table_t t;
@@ -388,6 +514,43 @@ static int syscalls_getSystemColors(lua_State *L)
     lua_setfield(L, -2, "workText");
 
     return 1;
+}
+
+static int syscalls_SetSystemColors(lua_State *L)
+{
+    lua_settop(L, 1);
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_getfield(L, 1, "frameArea");
+    lua_setfield(L, 1, "grabBar");
+    lua_setfield(L, 1, "grabBarButton");
+    lua_setfield(L, 1, "grabButtonText");
+    lua_setfield(L, 1, "grabText");
+    lua_setfield(L, 1, "workArea");
+    lua_setfield(L, 1, "workButton");
+    lua_setfield(L, 1, "workButtonText");
+    lua_setfield(L, 1, "workGraph");
+    lua_setfield(L, 1, "workText");
+
+    ksys_colors_table_t t;
+
+    t.frame_area = luaL_checkinteger(L, -10);
+    t.grab_bar = luaL_checkinteger(L, -9);
+    t.grab_bar_button = luaL_checkinteger(L, -8);
+    t.grab_button_text = luaL_checkinteger(L, -7);
+    t.grab_text = luaL_checkinteger(L, -6);
+    t.work_area = luaL_checkinteger(L, -5);
+    t.work_button = luaL_checkinteger(L, -4);
+    t.work_button_text = luaL_checkinteger(L, -3);
+    t.work_graph = luaL_checkinteger(L, -2);
+    t.work_text = luaL_checkinteger(L, -1);
+
+    asm_inline(
+        "int $0x40"
+        ::"a"(48), "b"(2), "c"(&t), "d"(40)
+    );
+
+    return 0;
 }
 
 static int syscalls_getSkinHeight(lua_State *L)
@@ -519,6 +682,26 @@ static int syscalls_DeleteHotkey(lua_State *L)
 
 
     return 1;
+}
+
+static int syscalls_LockNormalInput(lua_State *L)
+{
+    asm_inline(
+        "int $0x40"
+        ::"a"(66), "b"(6)
+    );
+
+    return 0;
+}
+
+static int syscalls_UnlockNormalInput(lua_State *L)
+{
+    asm_inline(
+        "int $0x40"
+        ::"a"(66), "b"(7)
+    );
+
+    return 0;
 }
 
 /* 
@@ -743,9 +926,13 @@ static int syscalls_SetMouseSettings(lua_State *L)
     lua_settop(L, 1);
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    _ksys_set_mouse_settings(KSYS_MOUSE_GET_SPEED, lua_getfield(L, 1, "Speed"));
-    _ksys_set_mouse_settings(KSYS_MOUSE_SET_SENS, lua_getfield(L, 1, "Sens"));
-    _ksys_set_mouse_settings(KSYS_MOUSE_SET_DOUBLE_CLICK_DELAY, lua_getfield(L, 1, "DoubleClickDelay"));
+    lua_getfield(L, 1, "Speed");
+    lua_getfield(L, 1, "Sens");
+    lua_getfield(L, 1, "DoubleClickDelay");
+
+    _ksys_set_mouse_settings(KSYS_MOUSE_GET_SPEED, luaL_checkinteger(L, -3));
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_SENS, luaL_checkinteger(L, -2));
+    _ksys_set_mouse_settings(KSYS_MOUSE_SET_DOUBLE_CLICK_DELAY, luaL_checkinteger(L, -1));
 
     return 0;
 }
@@ -782,56 +969,65 @@ static int syscalls_DeleteCursor(lua_State *L)
 */
 static const luaL_Reg syscallsLib[] = {
     /* Window funcs */
-    {"createWindow", syscalls_createWindow},
-    {"startRedraw", syscalls_startRedraw},
-    {"endRedraw", syscalls_endRedraw},
-    {"getSkinHeight", syscalls_getSkinHeight},
-    {"changeWindow", syscalls_changeWindow},
-    {"focusWindow", syscalls_focusWindow},
-    {"unfocusWindow", syscalls_unfocusWindow},
-    {"setWindowTitle", syscalls_setWindowTitle},
+    {"CreateWindow", syscalls_createWindow},
+    {"StartRedraw", syscalls_startRedraw},
+    {"EndRedraw", syscalls_endRedraw},
+    {"GetSkinHeight", syscalls_getSkinHeight},
+    {"ChangeWindow", syscalls_changeWindow},
+    {"FocusWindow", syscalls_focusWindow},
+    {"UnfocusWindow", syscalls_unfocusWindow},
+    {"SetWindowTitle", syscalls_setWindowTitle},
+    {"SetSkin", syscalls_SetSkin},
+    {"GetSkinTitleArea", syscalls_GetSkinTilteArea},
     /* Buttons funcs*/
-    {"defineButton", syscalls_defineButton},
-    {"deleteButton", syscalls_deleteButton},
-    {"getButton", syscalls_getButton},
+    {"DefineButton", syscalls_defineButton},
+    {"DeleteButton", syscalls_deleteButton},
+    {"GetButton", syscalls_getButton},
+    {"SetButtonStyle", syscalls_SetButtonsStyle},
     /* Events funcs */
     {"SetEventMask", syscalls_setEventMask},
-    {"waitEvent", syscalls_waitEvent},
-    {"checkEvent", syscalls_checkEvent},
-    {"waitEventTimeout", syscalls_waitEventTimeout},
+    {"WaitEvent", syscalls_waitEvent},
+    {"CheckEvent", syscalls_checkEvent},
+    {"WaitEventTimeout", syscalls_waitEventTimeout},
     /* Background funcs */
-    {"backgroundSetSize", syscalls_backgroundSetSize},
-    {"backgroundPutPixel", syscalls_backgroundPutPixel},
-    {"backgroundRedraw", syscalls_backgroundRedraw},
+    {"BackgroundSetSize", syscalls_backgroundSetSize},
+    {"BackgroundPutPixel", syscalls_backgroundPutPixel},
+    {"BackgroundRedraw", syscalls_backgroundRedraw},
     /* system funcs */
-    {"getRamSize", syscalls_getRamSize},
-    {"getFreeRam", syscalls_getFreeRam},
-    {"getCPUClock", syscalls_getCPUClock},
-    {"shutdownPowerOff", syscalls_shutdownPowerOff},
-    {"shutdownReboot", syscalls_shutdownReboot},
-    {"shutdownRestartKernel", syscalls_shutdownRestartKRN},
-    {"getSystemColors", syscalls_getSystemColors},
-    {"screenSize", syscalls_screenSize},
+    {"GetRamSize", syscalls_getRamSize},
+    {"GetFreeRam", syscalls_getFreeRam},
+    {"GetCPUClock", syscalls_getCPUClock},
+    {"ShutdownPowerOff", syscalls_shutdownPowerOff},
+    {"ShutdownReboot", syscalls_shutdownReboot},
+    {"ShutdownRestartKernel", syscalls_shutdownRestartKRN},
+    {"GetSystemColors", syscalls_getSystemColors},
+    {"SetSystemColors", syscalls_SetSystemColors},
+    {"ScreenSize", syscalls_screenSize},
+    {"SetWorkArea", syscalls_SetWorkArea},
     /* Draw funcs*/
-    {"drawLine", syscalls_drawLine},
-    {"drawPixel", syscalls_drawPixel},
-    {"drawText", syscalls_drawText},
-    {"drawRectangle", syscalls_drawRectangle},
+    {"DrawLine", syscalls_drawLine},
+    {"DrawPixel", syscalls_drawPixel},
+    {"DrawText", syscalls_drawText},
+    {"DrawRectangle", syscalls_drawRectangle},
+    {"ReadPoint", syscalls_ReadPoint},
     /* keyboard funcs */
-    {"setKeyInputMode", syscalls_setKeyInputMode},
+    {"SetKeyInputMode", syscalls_setKeyInputMode},
+    {"GetKeyInputMouse", syscalls_getKeyInputMode},
     {"getKey", syscalls_getKey},
     {"getControlKeyState", syscalls_getControlKeyState},
     {"SetHotkey", syscalls_SetHotkey},
     {"DeleteHotkey", syscalls_DeleteHotkey},
+    {"LockNormalInput", syscalls_LockNormalInput},
+    {"UnlockNormalInput", syscalls_UnlockNormalInput},
     /* Threads funcs */
-    {"threadInfo", syscalls_threadInfo},
-    {"killBySlot", syscalls_KillBySlot},
+    {"ThreadInfo", syscalls_threadInfo},
+    {"KillBySlot", syscalls_KillBySlot},
     /* Mouse funcs */
-    {"getMouseButtons", syscalls_getMouseButtons},
-    {"getMouseEvents", syscalls_getMouseEvents},
-    {"getMousePositionScreen", syscalls_getMousePositionScreen},
-    {"getMousePositionWindow", syscalls_getMousePositionWindow},
-    {"getMouseWheels", syscalls_getMouseWheels},
+    {"GetMouseButtons", syscalls_getMouseButtons},
+    {"GetMouseEvents", syscalls_getMouseEvents},
+    {"GetMousePositionScreen", syscalls_getMousePositionScreen},
+    {"GetMousePositionWindow", syscalls_getMousePositionWindow},
+    {"GetMouseWheels", syscalls_getMouseWheels},
     {"GetMouseSpeed", syscalls_GetMouseSpeed},
     {"GetMouseSens", syscalls_GetMouseSens},
     {"GetMouseDoubleClickDelay", syscalls_GetMouseDoubleClickDelay},
@@ -847,7 +1043,7 @@ static const luaL_Reg syscallsLib[] = {
     {"DeleteCursor", syscalls_DeleteCursor},
     {NULL, NULL}};
 
-static void syscalls_push_events(lua_State *L)
+static inline void syscalls_push_events(lua_State *L)
 {
     lua_pushinteger(L, KSYS_EVENT_NONE);
     lua_setfield(L, -2, "EventNone");
@@ -880,7 +1076,7 @@ static void syscalls_push_events(lua_State *L)
     lua_setfield(L, -2, "EventIRQBegin");
 }
 
-static void syscalls_push_buttonCodes(lua_State *L)
+static inline void syscalls_push_buttonCodes(lua_State *L)
 {
     lua_pushinteger(L, KSYS_MOUSE_LBUTTON_PRESSED);
     lua_setfield(L, -2, "LeftButton");
@@ -898,7 +1094,7 @@ static void syscalls_push_buttonCodes(lua_State *L)
     lua_setfield(L, -2, "Button5");
 }
 
-static void syscalls_push_slotStates(lua_State *L)
+static inline void syscalls_push_slotStates(lua_State *L)
 {
     lua_pushinteger(L, KSYS_SLOT_STATE_RUNNING);
     lua_setfield(L, -2, "stateRunning");
@@ -922,7 +1118,7 @@ static void syscalls_push_slotStates(lua_State *L)
     lua_setfield(L, -2, "stateFree");
 }
 
-void syscalls_push_scancodes(lua_State *L)
+static inline void syscalls_push_scancodes(lua_State *L)
 {
     lua_pushinteger(L, KSYS_SCANCODE_0);
     lua_setfield(L, -2, "Scancode_0");
@@ -1186,8 +1382,7 @@ void syscalls_push_scancodes(lua_State *L)
     lua_setfield(L, -2, "Scancode_Numpad_9");
 }
 
-
-static void syscalls_push_hotkey_states(lua_State *L)
+static inline void syscalls_push_hotkey_states(lua_State *L)
 {
     lua_pushinteger(L, 0);
     lua_setfield(L, -2, "hotkeyNoOne");
@@ -1205,6 +1400,42 @@ static void syscalls_push_hotkey_states(lua_State *L)
     lua_setfield(L, -2, "hotkeyRightOnly");
 }
 
+static inline void syscalls_push_buttonsStyle(lua_State *L)
+{
+    lua_pushinteger(L, 0);
+    lua_setfield(L, -2, "ButtonStyleFlat");
+
+    lua_pushinteger(L, 1);
+    lua_setfield(L, -2, "ButtonStyleVolume");
+}
+
+static inline void syscalls_push_windowStyles(lua_State *L)
+{
+    lua_pushinteger(L, 0);
+    lua_setfield(L, -2, "windowFixSizes");
+
+    lua_pushinteger(L, 1);
+    lua_setfield(L, -2, "windowNoDraw");
+
+    lua_pushinteger(L, 2);
+    lua_setfield(L, -2, "windowCanChangeSizes");
+
+    lua_pushinteger(L, 3);
+    lua_setfield(L, -2, "windowWithSkin");
+
+    lua_pushinteger(L, 4);
+    lua_setfield(L, -2, "windowWithSkinFixSizes");
+}
+
+static inline void syscalls_push_buttons(lua_State *L)
+{
+    lua_pushnumber(L, 0xffff);
+    lua_setfield(L, -2, "minimizationButton");
+
+    lua_pushnumber(L, 1);
+    lua_setfield(L, -2, "closeButton");
+}
+
 LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
@@ -1213,8 +1444,11 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
     syscalls_push_slotStates(L);
     syscalls_push_scancodes(L);
     syscalls_push_hotkey_states(L);
+    syscalls_push_buttonsStyle(L);
+    syscalls_push_windowStyles(L);
+    syscalls_push_buttons(L);
 
-    _ksys_set_event_mask(7);
+    _ksys_set_event_mask(7); // set default event mask
 
     return 1;
 }
