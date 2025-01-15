@@ -3,10 +3,14 @@ name: Build
 on:
   push:
     branches: [ "main" ]
+    paths:
+        - 'src/**'
+        - 'package/**'
   pull_request:
     branches: [ "main" ]
 
 jobs:
+  #Build static lua
   static-build:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +32,8 @@ jobs:
           ./src/lua
           ./src/luac
           ./src/liblua.a
-
+  
+  #Build shared lua
   shared-build:
     runs-on: ubuntu-latest
     steps:
@@ -51,7 +56,8 @@ jobs:
           ./src/luac
           ./src/lua54.dll
           ./src/lua54.dll.a
-    
+
+  #Build syscalls library
   syscalls-lib:
     runs-on: ubuntu-latest
     needs: shared-build
@@ -71,3 +77,26 @@ jobs:
         with:
           name: syscalls-build
           path: ./src/syscalls.dll
+
+  #Build package
+  package-build:
+    runs-on: ububntu-latest
+    needs: 
+      - shared-build 
+      - static-build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: egor00f/install-kolibrios-toolchain-action@v1.1
+    
+      - name: kolibros repo
+        run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
+
+      - name: Build
+        run: make package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-build
+          path: ./package.deb

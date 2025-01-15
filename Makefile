@@ -68,11 +68,15 @@ local:
 TOOLCHAIN_DIR=home/autobuild/tools/win32
 PACKAGE=package
 
-$(PACKAGE): shared
+# Build deb package with include headers
+$(PACKAGE): shared static
 	$(MKDIR) $@/$(TOOLCHAIN_DIR)/include
 	$(MKDIR) $@/$(TOOLCHAIN_DIR)/lib
+
 	cp -f src/*.h $@/$(TOOLCHAIN_DIR)/include
 	cp -f src/lua54.dll.a $@/$(TOOLCHAIN_DIR)/lib
+	cp -f src/liblua.a $@/$(TOOLCHAIN_DIR)/lib
+
 	dpkg-deb --build $@ $@.deb
 
 # make may get confused with install/ if it does not support .PHONY.
