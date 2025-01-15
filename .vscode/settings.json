@@ -14,6 +14,7 @@
     "editor.formatOnSave": false,
     "cSpell.enabled": true,
     "cSpell.words": [
+        "syscalls",
         "KolibriOS",
         "ksys",
         "ksys_oskey_t",
@@ -77,6 +78,5 @@
         "LUA_TTABLE",
         "LUALIB_API",
         "luaopen_"
-    ],
-    "C_Cpp.errorSquiggles": "disabled",
+    ]
 }

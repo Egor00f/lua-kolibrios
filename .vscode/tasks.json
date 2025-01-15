@@ -1,0 +1,74 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Build shared lua",
+			"detail": "Build lua shared",
+			"command": "-C ${workspaceFolder} shared",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"options": {
+				"shell": {
+					"executable": "make"
+				}
+			}
+		},
+		{
+			"type": "shell",
+			"label": "Build static lua",
+			"detail": "Build lua shared",
+			"command": "-C ${workspaceFolder} static",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"options": {
+				"shell": {
+					"executable": "make"
+				}
+			}
+		},
+		{
+			"type": "shell",
+			"label": "Build syscalls",
+			"detail": "Build syscals library",
+			"command": "make -C ${workspaceFolder} syscalls.dll",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"options": {
+				"shell": {
+					"executable": "cmd"
+				}
+			}
+		},
+		{
+			"type": "shell",
+			"label": "Clean",
+			"detail": "Clean build",
+			"command": "-C ${workspaceFolder} clean",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"options": {
+				"shell": {
+					"executable": "make"
+				}
+			}
+		}
+	]
+}

@@ -80,7 +80,6 @@ a:	$(ALL_A)
 
 # Static lib
 $(LUA_A): $(BASE_O)
-
 	$(AR) $(ARFLAGS) $@ $(BASE_O)
 
 # static lua
@@ -97,7 +96,7 @@ $(LUAC_T): $(LUAC_O) $(LUA_A)
 
 # Shared lib
 $(LUA_S): $(BASE_O)
-	$(LD) -shared -T dll.lds --entry _DllStartup -o $@ $(BASE_O) $(SYSLIBS)
+	$(LD) -shared -T dll.lds --entry _DllStartup -o $@ $(BASE_O) $(LIBS) --out-implib $@.a
 
 
 # shared lua
@@ -109,9 +108,8 @@ $(LUA_T_S): $(LUA_O) $(LUA_S)
 static: $(ALL_T)
 
 shared: 
-	$(MAKE) "ARFLAGS=crs" \
-	"LUA_T_S = lua" "LUA_T= " lua
-	$(MAKE) "LUAC_T=luac" luac
+	make "ARFLAGS=crs" "LUA_T_S=lua" "LUA_T=" lua
+	make "LUAC_T=luac" luac
 
 syscalls.dll: lsyscalls.o $(LUA_S)
 	$(CC) -shared -T dll.lds --entry _DllStartup -o $@ lsyscalls.o $(LUA_S) $(SYSLIBS)

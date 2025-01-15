@@ -46,8 +46,8 @@ V= 5.4
 R= $V.7
 
 
-shared static help test clean:
-	@cd src && $(MAKE) $@
+shared static syscalls.dll help test clean:
+	@cd src && $(MAKE) $@ 
 
 install: dummy
 	cd src && $(MKDIR) $(INSTALL_BIN) $(INSTALL_INC) $(INSTALL_LIB) $(INSTALL_MAN) $(INSTALL_LMOD) $(INSTALL_CMOD)
@@ -64,6 +64,16 @@ uninstall:
 
 local:
 	$(MAKE) install INSTALL_TOP=../install
+
+TOOLCHAIN_DIR=home/autobuild/tools/win32
+PACKAGE=package
+
+$(PACKAGE): shared
+	$(MKDIR) $@/$(TOOLCHAIN_DIR)/include
+	$(MKDIR) $@/$(TOOLCHAIN_DIR)/lib
+	cp -f src/*.h $@/$(TOOLCHAIN_DIR)/include
+	cp -f src/lua54.dll.a $@/$(TOOLCHAIN_DIR)/lib
+	dpkg-deb --build $@ $@.deb
 
 # make may get confused with install/ if it does not support .PHONY.
 dummy:

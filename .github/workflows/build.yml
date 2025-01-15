@@ -50,6 +50,7 @@ jobs:
           ./src/lua
           ./src/luac
           ./src/lua54.dll
+          ./src/lua54.dll.a
     
   syscalls-lib:
     runs-on: ubuntu-latest

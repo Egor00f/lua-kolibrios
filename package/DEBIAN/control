@@ -1,0 +1,11 @@
+Package: kos32-lua-dev
+Version: 0.1.3
+Architecture: amd64
+Section: devel
+Pre-Depends: kos32-gcc
+Priority: optional
+Homepage: https://github.com/Egor00f/lua-kolbirios
+Maintainer: Egor00f <velikiydolbayeb@gmail.com>
+Installed-Size: 428
+Description: kolibrios lua port for dev
+ Contain lua headers and builded lib

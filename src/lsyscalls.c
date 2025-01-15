@@ -37,15 +37,13 @@ static int syscalls_createWindow(lua_State *L)
         uint32_t borderColor = luaL_checkinteger(L, 5);
         uint32_t titleColor = luaL_checkinteger(L, 8);
         asm_inline(
-            "int $0x40"
-            :: "a"(0),
+            "int $0x40" ::"a"(0),
             "b"((x << 16) | ((w - 1) & 0xFFFF)),
             "c"((y << 16) | ((h - 1) & 0xFFFF)),
             "d"((style << 24) | (workcolor & 0xFFFFFF)),
             "D"(borderColor),
             "S"(titleColor)
-            : "memory"
-        );
+            : "memory");
     }
     else
     {
@@ -53,8 +51,7 @@ static int syscalls_createWindow(lua_State *L)
             x, y, w, h,
             luaL_checkstring(L, 5),
             workcolor,
-            style
-        );
+            style);
     }
 
     return 0;
@@ -63,11 +60,10 @@ static int syscalls_createWindow(lua_State *L)
 static int syscalls_changeWindow(lua_State *L)
 {
     _ksys_change_window(
-        luaL_checkinteger(L, 1), 
-        luaL_checkinteger(L, 2), 
-        luaL_checkinteger(L, 3), 
-        luaL_checkinteger(L, 4)
-    );
+        luaL_checkinteger(L, 1),
+        luaL_checkinteger(L, 2),
+        luaL_checkinteger(L, 3),
+        luaL_checkinteger(L, 4));
 
     return 0;
 }
@@ -98,9 +94,8 @@ static int syscalls_SetSkin(lua_State *L)
     uint ret;
     asm_inline(
         "int $0x40"
-        :"=a"(ret)
-        :"a"(48), "b"(8), "c"(luaL_checkstring(L, 1))
-    );
+        : "=a"(ret)
+        : "a"(48), "b"(8), "c"(luaL_checkstring(L, 1)));
 
     lua_pushinteger(L, ret);
 
@@ -113,9 +108,8 @@ static int syscalls_GetSkinTilteArea(lua_State *L)
 
     asm_inline(
         "int $0x40"
-        :"=a"(leftRight), "=b"(topBottom)
-        :"a"(48), "b"(7)
-    );
+        : "=a"(leftRight), "=b"(topBottom)
+        : "a"(48), "b"(7));
 
     lua_createtable(L, 0, 4);
 
@@ -143,24 +137,48 @@ static int syscalls_SetWorkArea(lua_State *L)
     uint32_t bottom = luaL_checkinteger(L, 4);
 
     asm_inline(
-        "int $0x40"
-        ::"a"(48), "b"(6), "c"(left * 65536 + right), "d"(top * 65536 + bottom)
-    );
+        "int $0x40" ::"a"(48), "b"(6), "c"(left * 65536 + right), "d"(top * 65536 + bottom));
 
     return 0;
 }
 
+static int syscalls_GetWorkArea(lua_State *L)
+{
+    ksys_pos_t leftlright;
+    ksys_pos_t toplbottom;
+
+    asm_inline(
+        "int $0x40"
+        :"=a"(leftlright), "=b"(toplbottom)
+        :"a"(48), "b"(5)
+    );
+
+    lua_createtable(L, 0, 4);
+
+    lua_pushinteger(L, leftlright.x);
+    lua_setfield(L, -2, "Left");
+
+    lua_pushinteger(L, leftlright.y);
+    lua_setfield(L, -2, "Right");
+
+    lua_pushinteger(L, toplbottom.x);
+    lua_setfield(L, -2, "Top");
+
+    lua_pushinteger(L, toplbottom.y);
+    lua_setfield(L, -2, "Bottom");
+
+    return 1;
+}
 
 static int syscalls_defineButton(lua_State *L)
 {
     _ksys_define_button(
-        luaL_checkinteger(L, 1), 
-        luaL_checkinteger(L, 2), 
-        luaL_checkinteger(L, 3), 
-        luaL_checkinteger(L, 4), 
-        luaL_checkinteger(L, 5), 
-        luaL_checkinteger(L, 6)
-    );
+        luaL_checkinteger(L, 1),
+        luaL_checkinteger(L, 2),
+        luaL_checkinteger(L, 3),
+        luaL_checkinteger(L, 4),
+        luaL_checkinteger(L, 5),
+        luaL_checkinteger(L, 6));
 
     return 0;
 }
@@ -175,15 +193,18 @@ static int syscalls_deleteButton(lua_State *L)
 static int syscalls_SetButtonsStyle(lua_State *L)
 {
     uint32_t style = luaL_checkinteger(L, 1);
-        asm_inline(
-            "int $0x40" ::"a"(48), "b"(1), "c"(style));
+    asm_inline(
+        "int $0x40" ::"a"(48), "b"(1), "c"(style));
+    
+    asm_inline(
+        "int $0x40" ::"a"(48), "b"(0), "c"(0));
 
     return 0;
 }
 
 /* static void syscalls_DrawBitmap(lua_State *L)
 {
-    
+
     _ksys_draw_bitmap(,);
 } */
 
@@ -192,8 +213,7 @@ static int syscalls_drawPixel(lua_State *L)
     _ksys_draw_pixel(
         luaL_checkinteger(L, 1),
         luaL_checkinteger(L, 2),
-        luaL_checkinteger(L, 3)
-    );
+        luaL_checkinteger(L, 3));
 
     return 0;
 }
@@ -201,7 +221,7 @@ static int syscalls_drawPixel(lua_State *L)
 static int syscalls_threadInfo(lua_State *L)
 {
     ksys_thread_t t;
-    
+
     _ksys_thread_info(&t, luaL_checkinteger(L, 1));
 
     lua_createtable(L, 0, 13);
@@ -244,7 +264,7 @@ static int syscalls_threadInfo(lua_State *L)
 
     lua_pushinteger(L, t.winy_start);
     lua_setfield(L, -2, "winYPos");
-  
+
     return 1;
 }
 
@@ -252,8 +272,7 @@ static int syscalls_KillBySlot(lua_State *L)
 {
 
     _ksys_kill_by_slot(
-        luaL_checkinteger(L, 1)
-    );
+        luaL_checkinteger(L, 1));
 
     return 0;
 }
@@ -344,7 +363,7 @@ static int syscalls_getButton(lua_State *L)
         : "=a"(val)
         : "a"(17));
 
-    if(val != 0)
+    if (val != 0)
     {
         lua_pushinteger(L, val >> 8);
 
@@ -382,9 +401,8 @@ static int syscalls_screenSize(lua_State *L)
 static int syscalls_backgroundSetSize(lua_State *L)
 {
     _ksys_bg_set_size(
-        luaL_checkinteger(L, 1), 
-        luaL_checkinteger(L, 2)
-    );
+        luaL_checkinteger(L, 1),
+        luaL_checkinteger(L, 2));
 
     return 0;
 }
@@ -392,11 +410,10 @@ static int syscalls_backgroundSetSize(lua_State *L)
 static int syscalls_backgroundPutPixel(lua_State *L)
 {
     _ksys_bg_put_pixel(
-        luaL_checkinteger(L, 1), 
-        luaL_checkinteger(L, 2), 
-        luaL_checkinteger(L, 3), 
-        luaL_checkinteger(L, 4)
-    );
+        luaL_checkinteger(L, 1),
+        luaL_checkinteger(L, 2),
+        luaL_checkinteger(L, 3),
+        luaL_checkinteger(L, 4));
 
     return 0;
 }
@@ -422,21 +439,131 @@ static int syscalls_drawLine(lua_State *L)
         luaL_checkinteger(L, 2),
         luaL_checkinteger(L, 3),
         luaL_checkinteger(L, 4),
-        luaL_checkinteger(L, 5)
-    );
+        luaL_checkinteger(L, 5));
 
     return 0;
 }
 
+enum TextScale
+{
+    TextScale_SIZE_6x9 = 1,    // 1x 6x9
+    TextScale_SIZE_8x16,   // 1x 8x16
+    TextScale_SIZE_12x18,  // 2x 6x9
+    TextScale_SIZE_16x32,  // 2x 8x16
+    TextScale_SIZE_18x27,  // 3x 6x9
+    TextScale_SIZE_24x36,  // 4x 6x9
+    TextScale_SIZE_24x48,  // 3x 8x16
+    TextScale_SIZE_30x45,  // 5x 6x9
+    TextScale_SIZE_32x64,  // 4x 8x16
+    TextScale_SIZE_36x54,  // 6x 6x9
+    TextScale_SIZE_40x80,  // 5x 8x16
+    TextScale_SIZE_42x63,  // 7x 6x9
+    TextScale_SIZE_48x72,  // 8x 6x9
+    TextScale_SIZE_48x96,  // 6x 8x16
+    TextScale_SIZE_56x112, // 7x 8x16
+    TextScale_SIZE_64x128   // 8x 8x16
+};
+
+static void syscall_drawText(const char *text, uint32_t x, uint32_t y, ksys_color_t color, enum TextScale size, uint32_t len, bool fillBackground, ksys_color_t backgroundColor)
+{
+    enum DrawTextEncoding
+    {
+        cp866_6x9 = 0,
+        cp866_8x16 = 1,
+        utf8 = 3,
+        utf16= 4
+    };
+
+    enum scale
+    {
+        scale_x1 = 0,
+        scale_x2 = 1,
+        scale_x3 = 2,
+        scale_x4 = 3,
+        scale_x5 = 4,
+        scale_x6 = 5,
+        scale_x7 = 6,
+        scale_x8 = 7
+    };
+
+    color &= 0x00FFFFFF;
+
+    color |= (fillBackground << 30);
+
+    switch(size)
+    {
+    case TextScale_SIZE_6x9:
+        color |= (cp866_8x16 << 28) | (scale_x1 << 24);
+        break;
+    case TextScale_SIZE_8x16:
+        color |= (cp866_8x16 << 28);
+        break;
+    case TextScale_SIZE_12x18:
+        color |= (cp866_6x9 << 28) | (scale_x2 << 24);
+        break;
+    case TextScale_SIZE_16x32:
+        color |= (cp866_8x16 << 28) | (scale_x2 << 24);
+        break;
+    case TextScale_SIZE_18x27:
+        color |= (cp866_6x9 << 28) | (scale_x3 << 24);
+        break;
+    case TextScale_SIZE_24x36:
+        color |= (cp866_6x9 << 28) | (scale_x4 << 24);
+        break;
+    case TextScale_SIZE_24x48:
+        color |= (cp866_8x16 << 28) | (scale_x3 << 24);
+        break;
+    case TextScale_SIZE_30x45:
+        color |= (cp866_6x9 << 28) | (scale_x5 << 24);
+        break;
+    case TextScale_SIZE_36x54:
+        color |= (cp866_6x9 << 28) | (scale_x6 << 24);
+        break;
+    case TextScale_SIZE_40x80:
+        color |= (cp866_8x16 << 28) | (scale_x5 << 24);
+        break;
+    case TextScale_SIZE_42x63:
+        color |= (cp866_6x9 << 28) | (scale_x7 << 24);
+        break;
+    case TextScale_SIZE_48x72:
+        color |= (cp866_6x9 << 28) | (scale_x8 << 24);
+        break;
+    case TextScale_SIZE_48x96:
+        color |= (cp866_8x16 << 28) | (scale_x6 << 24);
+        break;
+    case TextScale_SIZE_56x112:
+        color |= (cp866_8x16 << 28) | (scale_x7 << 24);
+        break;
+    case TextScale_SIZE_64x128:
+        color |= (cp866_8x16 << 28) | (scale_x8 << 24);
+        break;
+    default:
+        break;
+    };
+
+    if (len > 0)
+        color |= (1 << 31);
+
+    asm_inline(
+        "int $0x40" ::"a"(4),
+        "b"((x << 16) | y),
+        "c"(color),
+        "d"(text),
+        "S"(len),
+        "D"(backgroundColor));
+}
+
 static int syscalls_drawText(lua_State *L)
 {
-    char *text = luaL_checkstring(L, 1);
-    _ksys_draw_text(
-        text,
+    syscall_drawText(
+        luaL_checkstring(L, 1),
         luaL_checkinteger(L, 2),
         luaL_checkinteger(L, 3),
-        strlen(text),
-        luaL_checkinteger(L, 4));
+        luaL_checkinteger(L, 4),
+        luaL_optinteger(L, 5, TextScale_SIZE_8x16),
+        luaL_optinteger(L, 6, 0),
+        luaL_optinteger(L, 7, 0),
+        luaL_optinteger(L, 8, 0));
 
     return 0;
 }
@@ -448,8 +575,7 @@ static int syscalls_drawRectangle(lua_State *L)
         luaL_checkinteger(L, 2),
         luaL_checkinteger(L, 3),
         luaL_checkinteger(L, 4),
-        luaL_checkinteger(L, 5)
-    );
+        luaL_checkinteger(L, 5));
 
     return 0;
 }
@@ -458,7 +584,7 @@ static int syscalls_ReadPoint(lua_State *L)
 {
     ksys_color_t color;
 
-    if(syscalls_screenSizeCache.val == 0)
+    if (syscalls_screenSizeCache.val == 0)
         syscalls_updateScreenSize();
 
     uint32_t x = luaL_checkinteger(L, 1);
@@ -467,8 +593,7 @@ static int syscalls_ReadPoint(lua_State *L)
     asm_inline(
         "int $ 0x40"
         : "=a"(color)
-        : "a"(35), "b"(x * syscalls_screenSizeCache.x + y)
-    );
+        : "a"(35), "b"(x * syscalls_screenSizeCache.x + y));
 
     lua_pushnumber(L, color);
 
@@ -546,9 +671,10 @@ static int syscalls_SetSystemColors(lua_State *L)
     t.work_text = luaL_checkinteger(L, -1);
 
     asm_inline(
-        "int $0x40"
-        ::"a"(48), "b"(2), "c"(&t), "d"(40)
-    );
+        "int $0x40" ::"a"(48), "b"(2), "c"(&t), "d"(40));
+
+    asm_inline(
+        "int $0x40" ::"a"(48), "b"(0), "c"(0));
 
     return 0;
 }
@@ -579,11 +705,11 @@ static int syscalls_getKey(lua_State *L)
 {
     ksys_oskey_t a = _ksys_get_key();
 
-    if(a.val == 1)
+    if (a.val == 1)
     {
         lua_pushnil(L);
     }
-    else if(a.state == 0) 
+    else if (a.state == 0)
     {
         if (syscalls_KeyInputState == KSYS_KEY_INPUT_MODE_ASCII)
         {
@@ -597,8 +723,8 @@ static int syscalls_getKey(lua_State *L)
             lua_pushinteger(L, a.code);
         }
     }
-    
-    if(a.state == 2)
+
+    if (a.state == 2)
     {
         lua_pushinteger(L, a.code);
     }
@@ -606,7 +732,7 @@ static int syscalls_getKey(lua_State *L)
     {
         lua_pushnil(L);
     }
-    
+
     return 2;
 }
 
@@ -652,11 +778,10 @@ static int syscalls_SetHotkey(lua_State *L)
     luaL_checktype(L, 1, LUA_TTABLE);
 
     if (_ksys_set_sys_hotkey(
-            lua_getfield(L, -2, "Scancode"), 
-            ( lua_getfield(L, -2, "Shift")    ) | 
-            ( lua_getfield(L, -2, "Ctrl") << 4) | 
-            ( lua_getfield(L, -2, "Alt")  << 8)
-        ))
+            lua_getfield(L, -2, "Scancode"),
+            (lua_getfield(L, -2, "Shift")) |
+                (lua_getfield(L, -2, "Ctrl") << 4) |
+                (lua_getfield(L, -2, "Alt") << 8)))
     {
         luaL_pushfail(L);
     }
@@ -670,16 +795,13 @@ static int syscalls_DeleteHotkey(lua_State *L)
     luaL_checktype(L, 1, LUA_TTABLE);
 
     if (_ksys_del_sys_hotkey(
-            lua_getfield(L, -2, "Scancode"), 
-            lua_getfield(L, -2, "Shift") | 
-            (lua_getfield(L, -2, "Ctrl") << 4) | 
-            (lua_getfield(L, -2, "Alt") << 8)
-            )
-        )
+            lua_getfield(L, -2, "Scancode"),
+            lua_getfield(L, -2, "Shift") |
+                (lua_getfield(L, -2, "Ctrl") << 4) |
+                (lua_getfield(L, -2, "Alt") << 8)))
     {
         luaL_pushfail(L);
     }
-
 
     return 1;
 }
@@ -687,9 +809,7 @@ static int syscalls_DeleteHotkey(lua_State *L)
 static int syscalls_LockNormalInput(lua_State *L)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(66), "b"(6)
-    );
+        "int $0x40" ::"a"(66), "b"(6));
 
     return 0;
 }
@@ -697,14 +817,12 @@ static int syscalls_LockNormalInput(lua_State *L)
 static int syscalls_UnlockNormalInput(lua_State *L)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(66), "b"(7)
-    );
+        "int $0x40" ::"a"(66), "b"(7));
 
     return 0;
 }
 
-/* 
+/*
     Mouse Funcs
 */
 
@@ -741,7 +859,7 @@ static int syscalls_getMousePositionWindow(lua_State *L)
 static int syscalls_getMouseWheels(lua_State *L)
 {
     uint32_t state = _ksys_get_mouse_wheels();
-    
+
     lua_createtable(L, 0, 2);
 
     lua_pushinteger(L, state & 0xFFFF);
@@ -784,7 +902,7 @@ static int syscalls_getMouseEvents(lua_State *L)
 {
     uint32_t state = _ksys_get_mouse_eventstate();
 
-    lua_createtable(L, 0, 5+9);
+    lua_createtable(L, 0, 5 + 9);
 
     createMouseState(state, L);
 
@@ -880,13 +998,12 @@ static int syscalls_MouseSimulateState(lua_State *L)
     lua_getfield(L, 1, "Button5");
 
     _ksys_set_mouse_settings(
-        KSYS_MOUSE_SIM_STATE, 
+        KSYS_MOUSE_SIM_STATE,
         (luaL_checkinteger(L, -1) << 4) |
-        (luaL_checkinteger(L, -2) << 3) |
-        (luaL_checkinteger(L, -3) << 2) | 
-        (luaL_checkinteger(L, -4) << 1) | 
-        (luaL_checkinteger(L, -5))
-    );
+            (luaL_checkinteger(L, -2) << 3) |
+            (luaL_checkinteger(L, -3) << 2) |
+            (luaL_checkinteger(L, -4) << 1) |
+            (luaL_checkinteger(L, -5)));
 
     lua_pop(L, 2);
 
@@ -940,28 +1057,214 @@ static int syscalls_SetMouseSettings(lua_State *L)
 static int syscalls_LoadCursor(lua_State *L)
 {
     lua_pushinteger(
-        L, 
-        _ksys_load_cursor(
-            luaL_checkstring(L, 1), 
-            KSYS_CURSOR_FROM_FILE | 
-            (luaL_checkinteger(L, 2) << 24) | 
-            (luaL_checkinteger(L, 3) << 16)
-        )
-    );
+        L,
+        (uint32_t)_ksys_load_cursor(
+            (void*)luaL_checkstring(L, 1),
+            KSYS_CURSOR_FROM_FILE |
+                (luaL_checkinteger(L, 2) << 24) |
+                (luaL_checkinteger(L, 3) << 16)));
     return 1;
 }
 
 static int syscalls_SetCursor(lua_State *L)
 {
-    lua_pushinteger(L, _ksys_set_cursor(luaL_checkinteger(L, 1)));
+    lua_pushinteger(L, _ksys_set_cursor((void*)luaL_checkinteger(L, 1)));
     return 1;
 }
 
 static int syscalls_DeleteCursor(lua_State *L)
 {
-    _ksys_delete_cursor(luaL_checkinteger(L, 1));
+    _ksys_delete_cursor((void*)luaL_checkinteger(L, 1));
 
     return 0;
+}
+
+/* network funcs */
+
+static int syscalls_GetDevicesNum(lua_State *L)
+{
+    uint32_t num;
+
+    asm_inline(
+        "int $0x40"
+        :"=a"(num)
+        :"a"(74), "b"(-1)
+    );
+
+    lua_pushinteger(L, num);
+
+    return 1;
+}
+
+static int syscalls_GetDeviceType(lua_State *L)
+{
+    uint32_t type;
+
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(type)
+        : "a"(74), "b"(0 | device << 16));
+
+    lua_pushinteger(L, type);
+
+    return 1;
+}
+
+static int syscalls_GetDeviceName(lua_State *L)
+{
+    char *name[64];
+    uint32_t ret;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(ret)
+        : "a"(74), "b"(1 | device << 16), "c"(name));
+
+    if(ret == -1)
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushstring(L, name);
+    }
+
+    return 0;
+}
+
+static int syscalls_ResetDevice(lua_State *L)
+{
+    uint32_t ret = 0;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(ret)
+        : "a"(74), "b"(2));
+
+    lua_pushinteger(L, ret);
+
+    return 1;
+}
+
+static int syscalls_StopDevice(lua_State *L)
+{
+    uint32_t ret = 0;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(ret)
+        : "a"(74), "b"(3 | device << 16));
+
+    lua_pushinteger(L, ret);
+
+    return 1;
+}
+
+static int syscalls_GetTXPacketCount(lua_State *L)
+{
+    uint32_t num;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num)
+        : "a"(74), "b"(6 | device << 16));
+
+    if(num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, num);
+
+    return 1;
+}
+
+static int syscalls_GetRXPacketCount(lua_State *L)
+{
+    uint32_t num;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num)
+        : "a"(74), "b"(7 | device << 16));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, num);
+
+    return 1;
+}
+
+static int syscalls_GetTXByteCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(8 | device << 16));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+static int syscalls_GetRXByteCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(9 | device << 16));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+enum ConnectionStatus
+{
+    NoConnect = 0,
+    Unknown = 1,
+    Mb10 = 4,         // 10Mb
+    Mb100 = 5,        // 100Mb
+    Gb = 6,           // 1Gb
+    FullDuplex = 0b10 //
+};
+
+static int syscalls_GetConnectionStatus(lua_State *L)
+{
+    enum ConnectionStatus num;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num)
+        : "a"(74), "b"(7 | device << 16));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, num & 0x101);
+        lua_pushinteger(L, (num & FullDuplex) != 0);
+
+    return 2;
 }
 
 /*
@@ -969,78 +1272,90 @@ static int syscalls_DeleteCursor(lua_State *L)
 */
 static const luaL_Reg syscallsLib[] = {
     /* Window funcs */
-    {"CreateWindow", syscalls_createWindow},
-    {"StartRedraw", syscalls_startRedraw},
-    {"EndRedraw", syscalls_endRedraw},
-    {"GetSkinHeight", syscalls_getSkinHeight},
-    {"ChangeWindow", syscalls_changeWindow},
-    {"FocusWindow", syscalls_focusWindow},
-    {"UnfocusWindow", syscalls_unfocusWindow},
-    {"SetWindowTitle", syscalls_setWindowTitle},
-    {"SetSkin", syscalls_SetSkin},
+    {"CreateWindow",     syscalls_createWindow},
+    {"StartRedraw",      syscalls_startRedraw},
+    {"EndRedraw",        syscalls_endRedraw},
+    {"ChangeWindow",     syscalls_changeWindow},
+    {"FocusWindow",      syscalls_focusWindow},
+    {"UnfocusWindow",    syscalls_unfocusWindow},
+    {"SetWindowTitle",   syscalls_setWindowTitle},
+    {"GetSkinHeight",    syscalls_getSkinHeight},
+    {"SetSkin",          syscalls_SetSkin},
     {"GetSkinTitleArea", syscalls_GetSkinTilteArea},
     /* Buttons funcs*/
-    {"DefineButton", syscalls_defineButton},
-    {"DeleteButton", syscalls_deleteButton},
-    {"GetButton", syscalls_getButton},
-    {"SetButtonStyle", syscalls_SetButtonsStyle},
+    {"DefineButton",    syscalls_defineButton},
+    {"DeleteButton",    syscalls_deleteButton},
+    {"GetButton",       syscalls_getButton},
+    {"SetButtonStyle",  syscalls_SetButtonsStyle},
     /* Events funcs */
-    {"SetEventMask", syscalls_setEventMask},
-    {"WaitEvent", syscalls_waitEvent},
-    {"CheckEvent", syscalls_checkEvent},
-    {"WaitEventTimeout", syscalls_waitEventTimeout},
+    {"SetEventMask",        syscalls_setEventMask},
+    {"WaitEvent",           syscalls_waitEvent},
+    {"CheckEvent",          syscalls_checkEvent},
+    {"WaitEventTimeout",    syscalls_waitEventTimeout},
     /* Background funcs */
-    {"BackgroundSetSize", syscalls_backgroundSetSize},
-    {"BackgroundPutPixel", syscalls_backgroundPutPixel},
-    {"BackgroundRedraw", syscalls_backgroundRedraw},
+    {"BackgroundSetSize",   syscalls_backgroundSetSize},
+    {"BackgroundPutPixel",  syscalls_backgroundPutPixel},
+    {"BackgroundRedraw",    syscalls_backgroundRedraw},
     /* system funcs */
-    {"GetRamSize", syscalls_getRamSize},
-    {"GetFreeRam", syscalls_getFreeRam},
-    {"GetCPUClock", syscalls_getCPUClock},
-    {"ShutdownPowerOff", syscalls_shutdownPowerOff},
-    {"ShutdownReboot", syscalls_shutdownReboot},
-    {"ShutdownRestartKernel", syscalls_shutdownRestartKRN},
-    {"GetSystemColors", syscalls_getSystemColors},
-    {"SetSystemColors", syscalls_SetSystemColors},
-    {"ScreenSize", syscalls_screenSize},
-    {"SetWorkArea", syscalls_SetWorkArea},
+    {"GetRamSize",              syscalls_getRamSize},
+    {"GetFreeRam",              syscalls_getFreeRam},
+    {"GetCPUClock",             syscalls_getCPUClock},
+    {"ShutdownPowerOff",        syscalls_shutdownPowerOff},
+    {"ShutdownReboot",          syscalls_shutdownReboot},
+    {"ShutdownRestartKernel",   syscalls_shutdownRestartKRN},
+    {"GetSystemColors",         syscalls_getSystemColors},
+    {"SetSystemColors",         syscalls_SetSystemColors},
+    {"ScreenSize",              syscalls_screenSize},
+    {"GetWorkArea",             syscalls_GetWorkArea},
+    {"SetWorkArea",             syscalls_SetWorkArea},
     /* Draw funcs*/
-    {"DrawLine", syscalls_drawLine},
-    {"DrawPixel", syscalls_drawPixel},
-    {"DrawText", syscalls_drawText},
-    {"DrawRectangle", syscalls_drawRectangle},
-    {"ReadPoint", syscalls_ReadPoint},
+    {"DrawLine",        syscalls_drawLine},
+    {"DrawPixel",       syscalls_drawPixel},
+    {"DrawText",        syscalls_drawText},
+    {"DrawRectangle",   syscalls_drawRectangle},
+    {"ReadPoint",       syscalls_ReadPoint},
     /* keyboard funcs */
-    {"SetKeyInputMode", syscalls_setKeyInputMode},
-    {"GetKeyInputMouse", syscalls_getKeyInputMode},
-    {"getKey", syscalls_getKey},
-    {"getControlKeyState", syscalls_getControlKeyState},
-    {"SetHotkey", syscalls_SetHotkey},
-    {"DeleteHotkey", syscalls_DeleteHotkey},
-    {"LockNormalInput", syscalls_LockNormalInput},
-    {"UnlockNormalInput", syscalls_UnlockNormalInput},
+    {"SetKeyInputMode",     syscalls_setKeyInputMode},
+    {"GetKeyInputMouse",    syscalls_getKeyInputMode},
+    {"getKey",              syscalls_getKey},
+    {"getControlKeyState",  syscalls_getControlKeyState},
+    {"SetHotkey",           syscalls_SetHotkey},
+    {"DeleteHotkey",        syscalls_DeleteHotkey},
+    {"LockNormalInput",     syscalls_LockNormalInput},
+    {"UnlockNormalInput",   syscalls_UnlockNormalInput},
     /* Threads funcs */
-    {"ThreadInfo", syscalls_threadInfo},
-    {"KillBySlot", syscalls_KillBySlot},
+    {"ThreadInfo",  syscalls_threadInfo},
+    {"KillBySlot",  syscalls_KillBySlot},
     /* Mouse funcs */
-    {"GetMouseButtons", syscalls_getMouseButtons},
-    {"GetMouseEvents", syscalls_getMouseEvents},
-    {"GetMousePositionScreen", syscalls_getMousePositionScreen},
-    {"GetMousePositionWindow", syscalls_getMousePositionWindow},
-    {"GetMouseWheels", syscalls_getMouseWheels},
-    {"GetMouseSpeed", syscalls_GetMouseSpeed},
-    {"GetMouseSens", syscalls_GetMouseSens},
-    {"GetMouseDoubleClickDelay", syscalls_GetMouseDoubleClickDelay},
-    {"GetMouseSettings", syscalls_GetMouseSettings},
-    {"MouseSimulateState", syscalls_MouseSimulateState},
-    {"SetMouseSpeed", syscalls_SetMouseSpeed},
-    {"SetMouseSens", syscalls_SetMouseSens},
-    {"SetMousePos", syscalls_SetMousePos},
-    {"SetMouseDoubleClickDelay", syscalls_SetMouseDoubleClickDelay},
-    {"SetMouseSettings", syscalls_SetMouseSettings},
-    {"LoadCursor", syscalls_LoadCursor},
-    {"SetCursor", syscalls_SetCursor},
-    {"DeleteCursor", syscalls_DeleteCursor},
+    {"GetMouseButtons",             syscalls_getMouseButtons},
+    {"GetMouseEvents",              syscalls_getMouseEvents},
+    {"GetMousePositionScreen",      syscalls_getMousePositionScreen},
+    {"GetMousePositionWindow",      syscalls_getMousePositionWindow},
+    {"GetMouseWheels",              syscalls_getMouseWheels},
+    {"GetMouseSpeed",               syscalls_GetMouseSpeed},
+    {"GetMouseSens",                syscalls_GetMouseSens},
+    {"GetMouseDoubleClickDelay",    syscalls_GetMouseDoubleClickDelay},
+    {"GetMouseSettings",            syscalls_GetMouseSettings},
+    {"MouseSimulateState",          syscalls_MouseSimulateState},
+    {"SetMouseSpeed",               syscalls_SetMouseSpeed},
+    {"SetMouseSens",                syscalls_SetMouseSens},
+    {"SetMousePos",                 syscalls_SetMousePos},
+    {"SetMouseDoubleClickDelay",    syscalls_SetMouseDoubleClickDelay},
+    {"SetMouseSettings",            syscalls_SetMouseSettings},
+    {"LoadCursor",                  syscalls_LoadCursor},
+    {"SetCursor",                   syscalls_SetCursor},
+    {"DeleteCursor",                syscalls_DeleteCursor},
+    /* network funcs */
+    {"GetDevicesNum",    syscalls_GetDevicesNum},
+    {"GetDeviceType",    syscalls_GetDeviceType},
+    {"GetDeviceName",    syscalls_GetDeviceName},
+    {"ResetDevice",      syscalls_ResetDevice},
+    {"StopDevice",       syscalls_StopDevice},
+    {"GetTXPacketCount", syscalls_GetTXPacketCount},
+    {"GetRXPacketCount", syscalls_GetRXPacketCount},
+    {"GetTXByteCount",   syscalls_GetTXByteCount},
+    {"GetRXByteCount",   syscalls_GetRXByteCount},
+    {"GetConnectionStatus", syscalls_GetConnectionStatus},
     {NULL, NULL}};
 
 static inline void syscalls_push_events(lua_State *L)
@@ -1436,6 +1751,25 @@ static inline void syscalls_push_buttons(lua_State *L)
     lua_setfield(L, -2, "closeButton");
 }
 
+static inline void syscalls_push_connectionStatus(lua_State *L)
+{
+    lua_pushnumber(L, NoConnect);
+    lua_setfield(L, -2, "noConnect");
+
+    lua_pushnumber(L, Unknown);
+    lua_setfield(L, -2, "unknownConnection");
+
+    lua_pushnumber(L, Mb10);
+    lua_setfield(L, -2, "Connection10Mb");
+
+    lua_pushnumber(L, Mb100);
+    lua_setfield(L, -2, "Connection100Mb");
+
+    lua_pushnumber(L, Gb);
+    lua_setfield(L, -2, "Connection1Gb");
+
+}
+
 LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
@@ -1447,6 +1781,7 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
     syscalls_push_buttonsStyle(L);
     syscalls_push_windowStyles(L);
     syscalls_push_buttons(L);
+    syscalls_push_connectionStatus(L);
 
     _ksys_set_event_mask(7); // set default event mask
 

@@ -4,11 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/newlib/libc/include",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include/tr1",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include/tr2",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include/mingw32"
+                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/newlib/libc/include"
             ],
             "defines": [
             ],
@@ -21,11 +17,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/newlib/libc/include",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include/tr1",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include/tr2",
-                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/libstdc++-v3/include/mingw32"
+                "${workspaceFolder}/../kolibrios/contrib/sdk/sources/newlib/libc/include"
             ],
             "defines": [
             ],
