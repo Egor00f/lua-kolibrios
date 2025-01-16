@@ -18,8 +18,8 @@ jobs:
 
     - uses: egor00f/install-kolibrios-toolchain-action@v1.1
 
-    - name: kolibros repo
-      run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
+    - name: install newlib
+      run: sudo apt install kos-newlib
 
     - name: static Build
       run: cd src && make static
@@ -41,8 +41,8 @@ jobs:
 
     - uses: egor00f/install-kolibrios-toolchain-action@v1.1
 
-    - name: kolibros repo
-      run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
+    - name: install newlib
+      run: sudo apt install kos-newlib
 
     - name: shared Build
       run: cd src && make shared
@@ -66,8 +66,8 @@ jobs:
 
       - uses: egor00f/install-kolibrios-toolchain-action@v1.1
 
-      - name: kolibros repo
-        run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
+      - name: install newlib
+        run: sudo apt install kos-newlib
 
       - name: shared Build
         run: cd src && make syscalls.dll
@@ -81,19 +81,20 @@ jobs:
   #Build package
   package-build:
     runs-on: ububntu-latest
-    needs: 
-      - shared-build 
-      - static-build
+    needs: ["shared-build", "static-build"]
     steps:
       - uses: actions/checkout@v4
       
       - uses: egor00f/install-kolibrios-toolchain-action@v1.1
     
-      - name: kolibros repo
-        run: cd .. && git clone https://github.com/KolibriOS/kolibrios.git
+      - name: install newlib
+        run: sudo apt install kos-newlib
 
       - name: Build
         run: make package
+
+      - name: Test Install
+        run: sudo apt install ./package.deb
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

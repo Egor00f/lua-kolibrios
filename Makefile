@@ -46,7 +46,7 @@ V= 5.4
 R= $V.7
 
 
-shared static syscalls.dll help test clean:
+shared static syscalls.dll help test:
 	@cd src && $(MAKE) $@ 
 
 install: dummy
@@ -68,14 +68,17 @@ local:
 TOOLCHAIN_DIR=home/autobuild/tools/win32
 PACKAGE=package
 
+PACKAGE_INCLUDE_PATH=$(PACKAGE)/$(TOOLCHAIN_DIR)/include/lua
+PACKAGE_LIB_PATH=$(PACKAGE)/$(TOOLCHAIN_DIR)/lib
+
 # Build deb package with include headers
 $(PACKAGE): shared static
-	$(MKDIR) $@/$(TOOLCHAIN_DIR)/include
-	$(MKDIR) $@/$(TOOLCHAIN_DIR)/lib
+	$(MKDIR) $(PACKAGE_INCLUDE_PATH)
+	$(MKDIR) $(PACKAGE_LIB_PATH)
 
-	cp -f src/*.h $@/$(TOOLCHAIN_DIR)/include
-	cp -f src/lua54.dll.a $@/$(TOOLCHAIN_DIR)/lib
-	cp -f src/liblua.a $@/$(TOOLCHAIN_DIR)/lib
+	cp -f src/*.h $(PACKAGE_INCLUDE_PATH)
+	cp -f src/lua54.dll.a $(PACKAGE_LIB_PATH)
+	cp -f src/liblua.a $(PACKAGE_LIB_PATH)
 
 	dpkg-deb --build $@ $@.deb
 
@@ -108,6 +111,12 @@ pc:
 	@echo "prefix=$(INSTALL_TOP)"
 	@echo "libdir=$(INSTALL_LIB)"
 	@echo "includedir=$(INSTALL_INC)"
+
+clean:
+	@cd src && $(MAKE) $@ 
+	$(RM) $(PACKAGE).deb
+	$(RM) -R $(PACKAGE_INCLUDE_PATH)
+	$(RM) -R $(PACKAGE_LIB_PATH)
 
 # Targets that do not create files (not all makes understand .PHONY).
 .PHONY: all help test clean install uninstall local dummy echo pc

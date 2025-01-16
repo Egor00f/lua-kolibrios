@@ -2,6 +2,7 @@
 *.a
 *.obj
 *.dll
+*.deb
 
 src/lua
 src/luac
