@@ -81,7 +81,7 @@ jobs:
   #Build package
   package-build:
     runs-on: ububntu-latest
-    needs: ["shared-build", "static-build"]
+    needs: [shared-build, static-build]
     steps:
       - uses: actions/checkout@v4
       
