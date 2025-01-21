@@ -108,7 +108,7 @@ jobs:
   #Build package
   package-build:
     name: Package with include files build
-    runs-on: ububntu-latest
+    runs-on: ubuntu-latest
     needs: [shared-build, static-build]
     steps:
       - uses: actions/checkout@v4
