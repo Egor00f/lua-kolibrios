@@ -23,7 +23,7 @@ jobs:
       run: sudo apt install kos-newlib
 
     - name: static Build
-      run: cd src && make static
+      run: make static
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -47,7 +47,7 @@ jobs:
       run: sudo apt install kos-newlib
 
     - name: shared Build
-      run: cd src && make shared
+      run: make shared
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
