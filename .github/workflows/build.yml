@@ -12,6 +12,7 @@ on:
 jobs:
   #Build static lua
   static-build:
+    name: Lua static build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -35,6 +36,7 @@ jobs:
   
   #Build shared lua
   shared-build:
+    name: Lua shared build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -59,6 +61,7 @@ jobs:
 
   #Build syscalls library
   syscalls-lib:
+    name: syscalls library build
     runs-on: ubuntu-latest
     needs: shared-build
     steps:
@@ -70,7 +73,7 @@ jobs:
         run: sudo apt install kos-newlib
 
       - name: shared Build
-        run: cd src && make syscalls.dll
+        run: make syscalls.dll
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -78,8 +81,33 @@ jobs:
           name: syscalls-build
           path: ./src/syscalls.dll
 
+  static-with-syscalls:
+    name: Static build with syscalls library
+    runs-on: ubuntu-latest
+    needs: [syscalls-lib, static-build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: egor00f/install-kolibrios-toolchain-action@v1.1
+
+      - name: install newlib
+        run: sudo apt install kos-newlib
+
+      - name: shared Build
+        run: make static-with-syscalls
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-with-syscalls-build
+          path: |
+            ./src/lua
+            ./src/luac
+            ./src/liblua.a
+
   #Build package
   package-build:
+    name: Package with include files build
     runs-on: ububntu-latest
     needs: [shared-build, static-build]
     steps:

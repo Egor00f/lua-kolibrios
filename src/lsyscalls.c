@@ -10,6 +10,11 @@
 
 #include <sys/ksys.h>
 
+/*
+    Режим ввода с клавиатуры
+
+    функции для получения текущего режима нет, поэтому выкручиваемся таким образом
+*/
 static ksys_key_input_mode_t syscalls_KeyInputState = KSYS_KEY_INPUT_MODE_ASCII;
 
 /*
@@ -22,6 +27,61 @@ static ksys_key_input_mode_t syscalls_KeyInputState = KSYS_KEY_INPUT_MODE_ASCII;
     обновляется функцией syscalls_updateScreenSize
 */
 static ksys_pos_t syscalls_screenSizeCache = {0};
+
+
+/*
+    функции для того чтобы возвращаемые значения функций были болле-мение едиообразны
+*/
+
+
+inline void syscalls_ReturnIntegerOrNil(LUA_INTEGER value, lua_State *L)
+{
+    if (value == -1)
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushinteger(L, value);
+    }
+}
+
+inline void syscalls_ReturnIntegerValueOrNil(LUA_INTEGER cond, LUA_INTEGER value, lua_State *L)
+{
+    if (cond == -1)
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushinteger(L, value);
+    }
+}
+
+inline void syscalls_ReturnTrueOrNil(LUA_INTEGER value, lua_State *L)
+{
+    if (value == -1)
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushboolean(L, true);
+    }
+}
+
+inline void syscalls_ReturnStringOrNil(LUA_INTEGER cond, const char *value, lua_State *L)
+{
+    if (value == -1)
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushstring(L, value);
+    }
+}
+
 
 static int syscalls_createWindow(lua_State *L)
 {
@@ -130,7 +190,6 @@ static int syscalls_GetSkinTilteArea(lua_State *L)
 
 static int syscalls_SetWorkArea(lua_State *L)
 {
-
     uint32_t left = luaL_checkinteger(L, 1);
     uint32_t top = luaL_checkinteger(L, 2);
     uint32_t right = luaL_checkinteger(L, 3);
@@ -397,6 +456,10 @@ static int syscalls_screenSize(lua_State *L)
 
     return 1;
 }
+
+/* 
+    Backgound
+*/
 
 static int syscalls_backgroundSetSize(lua_State *L)
 {
@@ -1058,8 +1121,8 @@ static int syscalls_LoadCursor(lua_State *L)
 {
     lua_pushinteger(
         L,
-        (uint32_t)_ksys_load_cursor(
-            (void*)luaL_checkstring(L, 1),
+        (LUA_INTEGER)_ksys_load_cursor(
+            (void *)luaL_checkstring(L, 1),
             KSYS_CURSOR_FROM_FILE |
                 (luaL_checkinteger(L, 2) << 24) |
                 (luaL_checkinteger(L, 3) << 16)));
@@ -1068,7 +1131,12 @@ static int syscalls_LoadCursor(lua_State *L)
 
 static int syscalls_SetCursor(lua_State *L)
 {
-    lua_pushinteger(L, _ksys_set_cursor((void*)luaL_checkinteger(L, 1)));
+    lua_pushinteger(
+        L, 
+        (LUA_INTEGER) _ksys_set_cursor(
+            (void *) luaL_checkinteger(L, 1)
+        )
+    );
     return 1;
 }
 
@@ -1079,7 +1147,9 @@ static int syscalls_DeleteCursor(lua_State *L)
     return 0;
 }
 
-/* network funcs */
+/* 
+    network funcs 
+*/
 
 static int syscalls_GetDevicesNum(lua_State *L)
 {
@@ -1105,7 +1175,7 @@ static int syscalls_GetDeviceType(lua_State *L)
     asm_inline(
         "int $0x40"
         : "=a"(type)
-        : "a"(74), "b"(0 | device << 16));
+        : "a"(74), "b"(0 | device << 8));
 
     lua_pushinteger(L, type);
 
@@ -1114,25 +1184,18 @@ static int syscalls_GetDeviceType(lua_State *L)
 
 static int syscalls_GetDeviceName(lua_State *L)
 {
-    char *name[64];
+    char name[64];
     uint32_t ret;
     uint32_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
         : "=a"(ret)
-        : "a"(74), "b"(1 | device << 16), "c"(name));
+        : "a"(74), "b"(1 | device << 8), "c"(name));
 
-    if(ret == -1)
-    {
-        lua_pushnil(L);
-    }
-    else
-    {
-        lua_pushstring(L, name);
-    }
+    syscalls_ReturnStringOrNil(ret, name, L);
 
-    return 0;
+    return 1;
 }
 
 static int syscalls_ResetDevice(lua_State *L)
@@ -1144,7 +1207,7 @@ static int syscalls_ResetDevice(lua_State *L)
         : "=a"(ret)
         : "a"(74), "b"(2));
 
-    lua_pushinteger(L, ret);
+    syscalls_ReturnTrueOrNil(ret, L);
 
     return 1;
 }
@@ -1157,9 +1220,9 @@ static int syscalls_StopDevice(lua_State *L)
     asm_inline(
         "int $0x40"
         : "=a"(ret)
-        : "a"(74), "b"(3 | device << 16));
+        : "a"(74), "b"(3 | device << 8));
 
-    lua_pushinteger(L, ret);
+    syscalls_ReturnTrueOrNil(ret, L);
 
     return 1;
 }
@@ -1172,12 +1235,9 @@ static int syscalls_GetTXPacketCount(lua_State *L)
     asm_inline(
         "int $0x40"
         : "=a"(num)
-        : "a"(74), "b"(6 | device << 16));
+        : "a"(74), "b"(6 | device << 8));
 
-    if(num == -1)
-        lua_pushnil(L);
-    else
-        lua_pushinteger(L, num);
+    syscalls_ReturnIntegerOrNil(num, L);
 
     return 1;
 }
@@ -1185,17 +1245,14 @@ static int syscalls_GetTXPacketCount(lua_State *L)
 static int syscalls_GetRXPacketCount(lua_State *L)
 {
     uint32_t num;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
         : "=a"(num)
-        : "a"(74), "b"(7 | device << 16));
+        : "a"(74), "b"(7 | device << 8));
 
-    if (num == -1)
-        lua_pushnil(L);
-    else
-        lua_pushinteger(L, num);
+    syscalls_ReturnIntegerOrNil(num, L);
 
     return 1;
 }
@@ -1204,12 +1261,12 @@ static int syscalls_GetTXByteCount(lua_State *L)
 {
     int num;
     uint32_t NUM;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
         : "=a"(num), "=b"(NUM)
-        : "a"(74), "b"(8 | device << 16));
+        : "a"(74), "b"(8 | device << 8));
 
     if (num == -1)
         lua_pushnil(L);
@@ -1223,17 +1280,125 @@ static int syscalls_GetRXByteCount(lua_State *L)
 {
     int num;
     uint32_t NUM;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
         : "=a"(num), "=b"(NUM)
-        : "a"(74), "b"(9 | device << 16));
+        : "a"(74), "b"(9 | device << 8));
 
     if (num == -1)
         lua_pushnil(L);
     else
         lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+static int syscalls_GetTXErrorPacketCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint8_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(11 | device << 8));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+static int syscalls_GetTXDropPacketCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint8_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(12 | device << 8));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+static int syscalls_GetTXMissPacketCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint8_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(13 | device << 8));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+static int syscalls_GetRXErrorPacketCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint8_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(14 | device << 8));
+
+    if (num == -1)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, (uint64_t)(num | NUM << 31));
+
+    return 1;
+}
+
+static int syscalls_GetRXDropPacketCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint8_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(15 | device << 8));
+    
+    syscalls_ReturnIntegerValueOrNil(num, (uint64_t)(num | NUM << 31), L);
+
+    return 1;
+}
+
+static int syscalls_GetRXMissPacketCount(lua_State *L)
+{
+    int num;
+    uint32_t NUM;
+    uint8_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(num), "=b"(NUM)
+        : "a"(74), "b"(16 | device << 8));
+
+    syscalls_ReturnIntegerValueOrNil(num, (uint64_t)(num | NUM << 31), L);
 
     return 1;
 }
@@ -1251,12 +1416,12 @@ enum ConnectionStatus
 static int syscalls_GetConnectionStatus(lua_State *L)
 {
     enum ConnectionStatus num;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
         : "=a"(num)
-        : "a"(74), "b"(7 | device << 16));
+        : "a"(74), "b"(10 | device << 8));
 
     if (num == -1)
         lua_pushnil(L);
@@ -1267,95 +1432,681 @@ static int syscalls_GetConnectionStatus(lua_State *L)
     return 2;
 }
 
+static int syscalls_ReadMAC(lua_State *L)
+{
+    uint32_t eax, ebx;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(ebx)
+        : "a"(76), "b"(0 | device << 8));
+
+    syscalls_ReturnIntegerValueOrNil(eax, eax | (ebx << 31), L);
+
+    return 1;
+}
+
+typedef enum SYSCALLS_PROTOCOLS
+{
+    IPv4 = 1,
+    ICMP = 2,
+    UDP = 3,
+    TCP = 4,
+    ARP = 5
+} SYSCALLS_PROTOCOLS;
+
+inline int syscalls_ReadPacketSend(lua_State *L, SYSCALLS_PROTOCOLS protocol)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((protocol << 24) | (device << 8) | 0));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+inline int syscalls_ReadPacketReceive(lua_State *L, SYSCALLS_PROTOCOLS protocol)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((protocol << 24) | (device << 8) | 1));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+// IPv4
+
+static int syscalls_IPv4ReadPacketSend(lua_State *L)
+{
+    return syscalls_ReadPacketSend(L, IPv4);
+}
+
+static int syscalls_IPv4ReadPacketReceive(lua_State *L)
+{
+    return syscalls_ReadPacketReceive(L, IPv4);
+}
+
+static int syscalls_ReadIPv4Address(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 2));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_SetIPv4Address(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t IP = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 3), "c"(IP));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_ReadIPv4DNSAddress(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 4));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_SetIPv4DNSAddress(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t IP = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 5), "c"(IP));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_ReadIPv4SubnetMask(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 6));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_SetIPv4SubnetMask(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t IP = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 7), "c"(IP));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_ReadIPv4Gateway(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 8));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_SetIPv4Gateway(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t IP = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((IPv4 << 24) | (device << 8) | 7), "c"(IP));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+// ICMP
+
+static int syscalls_ICMPReadPacketSend(lua_State *L)
+{
+    return syscalls_ReadPacketSend(L, ICMP);
+}
+
+static int syscalls_ICMPReadPacketReceive(lua_State *L)
+{
+    return syscalls_ReadPacketReceive(L, ICMP);
+}
+
+// UDP
+
+static int syscalls_UDPReadPacketSend(lua_State *L)
+{
+    return syscalls_ReadPacketSend(L, UDP);
+}
+
+static int syscalls_UDPReadPacketReceive(lua_State *L)
+{
+    return syscalls_ReadPacketReceive(L, UDP);
+}
+
+// TCP
+
+static int syscalls_TCPReadPacketSend(lua_State *L)
+{
+    return syscalls_ReadPacketSend(L, TCP);
+}
+
+static int syscalls_TCPReadPacketReceive(lua_State *L)
+{
+    return syscalls_ReadPacketReceive(L, TCP);
+}
+
+// ARP
+
+struct ARP_entry
+{
+    uint32_t IP;
+    char MAC[6];
+    uint16_t Status;
+    uint16_t TTL;
+};
+
+static int syscalls_ARPReadPacketSend(lua_State *L)
+{
+    return syscalls_ReadPacketSend(L, ARP);
+}
+
+static int syscalls_ARPReadPacketReceive(lua_State *L)
+{
+    return syscalls_ReadPacketReceive(L, ARP);
+}
+
+static int syscalls_ReadARPEntries(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((ARP << 24) | (device << 8) | 2));
+
+    syscalls_ReturnIntegerOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_ReadARPEntry(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t entryNum = luaL_checkinteger(L, 2);
+    struct ARP_entry* buffer;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((ARP << 24) | (device << 8) | 3), "c"(entryNum), "D"(buffer));
+
+    syscalls_ReturnIntegerValueOrNil(eax, (LUA_INTEGER)buffer, L);
+
+    return 1;
+}
+
+static int syscalls_AddARPEntry(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t entryNum = luaL_checkinteger(L, 2);
+    struct ARP_entry *buffer = (struct ARP_entry *)luaL_checkinteger(L, 3);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((ARP << 24) | (device << 8) | 4), "c"(entryNum), "S"(buffer));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_RemoveARPEntry(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+    uint32_t entryNum = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((ARP << 24) | (device << 8) | 5), "c"(entryNum));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_SendARPAnnounce(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((ARP << 24) | (device << 8) | 6));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+static int syscalls_ReadARPConflicts(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t device = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax)
+        : "a"(76), "b"((ARP << 24) | (device << 8) | 7));
+
+    syscalls_ReturnTrueOrNil(eax, L);
+
+    return 1;
+}
+
+/* Сокеты */
+
+static int syscalls_OpenSocket(lua_State *L)
+{
+    uint32_t socketNum;
+    uint32_t errorCode;
+
+    uint32_t family = luaL_checkinteger(L, 1);
+    uint32_t type = luaL_checkinteger(L, 2);
+    uint32_t protocol = luaL_checkinteger(L, 3);
+
+    asm_inline(
+        "int $0x40"
+        :"=a"(socketNum), "=b"(errorCode)
+        :"a"(77), "b"(0), "c"(family), "d"(type), "S"(protocol)
+    );
+
+    if(socketNum == -1)
+    {
+        lua_pushnil(L);                 // Push socketNum
+        lua_pushnumber(L, socketNum);   // Push error Code
+    }
+    else
+    {
+        lua_pushnumber(L, socketNum);   // Push socketNum
+        lua_pushnil(L);                 // Push error code
+    }
+
+    return 2;
+}
+
+static int syscalls_CloseSocket(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(1), "c"(socketNum));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_Bind(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t sockaddr = luaL_checkinteger(L, 2);
+    uint32_t sockaddrLen = luaL_checkinteger(L, 3);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(2), "c"(socketNum), "d"(sockaddr), "S"(sockaddrLen));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_Listen(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t backlog = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(3), "c"(socketNum), "d"(backlog));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_Connect(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t sockaddr = luaL_checkinteger(L, 2);
+    uint32_t sockaddrLen = luaL_checkinteger(L, 3);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(4), "c"(socketNum), "d"(sockaddr), "S"(sockaddrLen));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_Accept(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t sockaddr = luaL_checkinteger(L, 2);
+    uint32_t sockaddrLen = luaL_checkinteger(L, 3);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(5), "c"(socketNum), "d"(sockaddr), "S"(sockaddrLen));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_Send(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t buffer = luaL_checkinteger(L, 2);
+    uint32_t bufferLen = luaL_checkinteger(L, 3);
+    uint32_t flags = luaL_checkinteger(L, 4);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(6), "c"(socketNum), "d"(buffer), "S"(bufferLen), "D"(flags));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_Receive(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t buffer = luaL_checkinteger(L, 2);
+    uint32_t bufferLen = luaL_checkinteger(L, 3);
+    uint32_t flags = luaL_checkinteger(L, 4);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(7), "c"(socketNum), "d"(buffer), "S"(bufferLen), "D"(flags));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_GetSocketOptions(lua_State *L)
+{
+    uint32_t eax;
+    uint32_t errorCode;
+
+    uint32_t socketNum = luaL_checkinteger(L, 1);
+    uint32_t optstruct = luaL_checkinteger(L, 2);
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(eax), "=b"(errorCode)
+        : "a"(77), "b"(8), "c"(socketNum), "d"(optstruct));
+
+    syscalls_ReturnIntegerValueOrNil(eax, errorCode, L);
+
+    return 1;
+}
+
+static int syscalls_GetPairSocket(lua_State *L)
+{
+    int32_t firstSocketNum;
+    uint32_t secondSocketNum;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(firstSocketNum), "=b"(secondSocketNum)
+        : "a"(77), "b"(9));
+
+    if(firstSocketNum == -1)
+    {
+        lua_pushnil(L);
+        lua_pushinteger(L, secondSocketNum);
+    }
+    else
+    {
+        lua_pushinteger(L, firstSocketNum);
+        lua_pushinteger(L, secondSocketNum);
+    }
+
+    return 2;
+}
+
 /*
 ** functions for 'syscalls' library
 */
 static const luaL_Reg syscallsLib[] = {
     /* Window funcs */
-    {"CreateWindow",     syscalls_createWindow},
-    {"StartRedraw",      syscalls_startRedraw},
-    {"EndRedraw",        syscalls_endRedraw},
-    {"ChangeWindow",     syscalls_changeWindow},
-    {"FocusWindow",      syscalls_focusWindow},
-    {"UnfocusWindow",    syscalls_unfocusWindow},
-    {"SetWindowTitle",   syscalls_setWindowTitle},
-    {"GetSkinHeight",    syscalls_getSkinHeight},
-    {"SetSkin",          syscalls_SetSkin},
+    {"CreateWindow", syscalls_createWindow},
+    {"StartRedraw", syscalls_startRedraw},
+    {"EndRedraw", syscalls_endRedraw},
+    {"ChangeWindow", syscalls_changeWindow},
+    {"FocusWindow", syscalls_focusWindow},
+    {"UnfocusWindow", syscalls_unfocusWindow},
+    {"SetWindowTitle", syscalls_setWindowTitle},
+    {"GetSkinHeight", syscalls_getSkinHeight},
+    {"SetSkin", syscalls_SetSkin},
     {"GetSkinTitleArea", syscalls_GetSkinTilteArea},
     /* Buttons funcs*/
-    {"DefineButton",    syscalls_defineButton},
-    {"DeleteButton",    syscalls_deleteButton},
-    {"GetButton",       syscalls_getButton},
-    {"SetButtonStyle",  syscalls_SetButtonsStyle},
+    {"DefineButton", syscalls_defineButton},
+    {"DeleteButton", syscalls_deleteButton},
+    {"GetButton", syscalls_getButton},
+    {"SetButtonStyle", syscalls_SetButtonsStyle},
     /* Events funcs */
-    {"SetEventMask",        syscalls_setEventMask},
-    {"WaitEvent",           syscalls_waitEvent},
-    {"CheckEvent",          syscalls_checkEvent},
-    {"WaitEventTimeout",    syscalls_waitEventTimeout},
+    {"SetEventMask", syscalls_setEventMask},
+    {"WaitEvent", syscalls_waitEvent},
+    {"CheckEvent", syscalls_checkEvent},
+    {"WaitEventTimeout", syscalls_waitEventTimeout},
     /* Background funcs */
-    {"BackgroundSetSize",   syscalls_backgroundSetSize},
-    {"BackgroundPutPixel",  syscalls_backgroundPutPixel},
-    {"BackgroundRedraw",    syscalls_backgroundRedraw},
+    {"BackgroundSetSize", syscalls_backgroundSetSize},
+    {"BackgroundPutPixel", syscalls_backgroundPutPixel},
+    {"BackgroundRedraw", syscalls_backgroundRedraw},
     /* system funcs */
-    {"GetRamSize",              syscalls_getRamSize},
-    {"GetFreeRam",              syscalls_getFreeRam},
-    {"GetCPUClock",             syscalls_getCPUClock},
-    {"ShutdownPowerOff",        syscalls_shutdownPowerOff},
-    {"ShutdownReboot",          syscalls_shutdownReboot},
-    {"ShutdownRestartKernel",   syscalls_shutdownRestartKRN},
-    {"GetSystemColors",         syscalls_getSystemColors},
-    {"SetSystemColors",         syscalls_SetSystemColors},
-    {"ScreenSize",              syscalls_screenSize},
-    {"GetWorkArea",             syscalls_GetWorkArea},
-    {"SetWorkArea",             syscalls_SetWorkArea},
+    {"GetRamSize", syscalls_getRamSize},
+    {"GetFreeRam", syscalls_getFreeRam},
+    {"GetCPUClock", syscalls_getCPUClock},
+    {"ShutdownPowerOff", syscalls_shutdownPowerOff},
+    {"ShutdownReboot", syscalls_shutdownReboot},
+    {"ShutdownRestartKernel", syscalls_shutdownRestartKRN},
+    {"GetSystemColors", syscalls_getSystemColors},
+    {"SetSystemColors", syscalls_SetSystemColors},
+    {"ScreenSize", syscalls_screenSize},
+    {"GetWorkArea", syscalls_GetWorkArea},
+    {"SetWorkArea", syscalls_SetWorkArea},
     /* Draw funcs*/
-    {"DrawLine",        syscalls_drawLine},
-    {"DrawPixel",       syscalls_drawPixel},
-    {"DrawText",        syscalls_drawText},
-    {"DrawRectangle",   syscalls_drawRectangle},
-    {"ReadPoint",       syscalls_ReadPoint},
+    {"DrawLine", syscalls_drawLine},
+    {"DrawPixel", syscalls_drawPixel},
+    {"DrawText", syscalls_drawText},
+    {"DrawRectangle", syscalls_drawRectangle},
+    {"ReadPoint", syscalls_ReadPoint},
     /* keyboard funcs */
-    {"SetKeyInputMode",     syscalls_setKeyInputMode},
-    {"GetKeyInputMouse",    syscalls_getKeyInputMode},
-    {"getKey",              syscalls_getKey},
-    {"getControlKeyState",  syscalls_getControlKeyState},
-    {"SetHotkey",           syscalls_SetHotkey},
-    {"DeleteHotkey",        syscalls_DeleteHotkey},
-    {"LockNormalInput",     syscalls_LockNormalInput},
-    {"UnlockNormalInput",   syscalls_UnlockNormalInput},
+    {"SetKeyInputMode", syscalls_setKeyInputMode},
+    {"GetKeyInputMouse", syscalls_getKeyInputMode},
+    {"getKey", syscalls_getKey},
+    {"getControlKeyState", syscalls_getControlKeyState},
+    {"SetHotkey", syscalls_SetHotkey},
+    {"DeleteHotkey", syscalls_DeleteHotkey},
+    {"LockNormalInput", syscalls_LockNormalInput},
+    {"UnlockNormalInput", syscalls_UnlockNormalInput},
     /* Threads funcs */
-    {"ThreadInfo",  syscalls_threadInfo},
-    {"KillBySlot",  syscalls_KillBySlot},
+    {"ThreadInfo", syscalls_threadInfo},
+    {"KillBySlot", syscalls_KillBySlot},
     /* Mouse funcs */
-    {"GetMouseButtons",             syscalls_getMouseButtons},
-    {"GetMouseEvents",              syscalls_getMouseEvents},
-    {"GetMousePositionScreen",      syscalls_getMousePositionScreen},
-    {"GetMousePositionWindow",      syscalls_getMousePositionWindow},
-    {"GetMouseWheels",              syscalls_getMouseWheels},
-    {"GetMouseSpeed",               syscalls_GetMouseSpeed},
-    {"GetMouseSens",                syscalls_GetMouseSens},
-    {"GetMouseDoubleClickDelay",    syscalls_GetMouseDoubleClickDelay},
-    {"GetMouseSettings",            syscalls_GetMouseSettings},
-    {"MouseSimulateState",          syscalls_MouseSimulateState},
-    {"SetMouseSpeed",               syscalls_SetMouseSpeed},
-    {"SetMouseSens",                syscalls_SetMouseSens},
-    {"SetMousePos",                 syscalls_SetMousePos},
-    {"SetMouseDoubleClickDelay",    syscalls_SetMouseDoubleClickDelay},
-    {"SetMouseSettings",            syscalls_SetMouseSettings},
-    {"LoadCursor",                  syscalls_LoadCursor},
-    {"SetCursor",                   syscalls_SetCursor},
-    {"DeleteCursor",                syscalls_DeleteCursor},
+    {"GetMouseButtons", syscalls_getMouseButtons},
+    {"GetMouseEvents", syscalls_getMouseEvents},
+    {"GetMousePositionScreen", syscalls_getMousePositionScreen},
+    {"GetMousePositionWindow", syscalls_getMousePositionWindow},
+    {"GetMouseWheels", syscalls_getMouseWheels},
+    {"GetMouseSpeed", syscalls_GetMouseSpeed},
+    {"GetMouseSens", syscalls_GetMouseSens},
+    {"GetMouseDoubleClickDelay", syscalls_GetMouseDoubleClickDelay},
+    {"GetMouseSettings", syscalls_GetMouseSettings},
+    {"MouseSimulateState", syscalls_MouseSimulateState},
+    {"SetMouseSpeed", syscalls_SetMouseSpeed},
+    {"SetMouseSens", syscalls_SetMouseSens},
+    {"SetMousePos", syscalls_SetMousePos},
+    {"SetMouseDoubleClickDelay", syscalls_SetMouseDoubleClickDelay},
+    {"SetMouseSettings", syscalls_SetMouseSettings},
+    {"LoadCursor", syscalls_LoadCursor},
+    {"SetCursor", syscalls_SetCursor},
+    {"DeleteCursor", syscalls_DeleteCursor},
     /* network funcs */
-    {"GetDevicesNum",    syscalls_GetDevicesNum},
-    {"GetDeviceType",    syscalls_GetDeviceType},
-    {"GetDeviceName",    syscalls_GetDeviceName},
-    {"ResetDevice",      syscalls_ResetDevice},
-    {"StopDevice",       syscalls_StopDevice},
+    {"GetDevicesNum", syscalls_GetDevicesNum},
+    {"GetDeviceType", syscalls_GetDeviceType},
+    {"GetDeviceName", syscalls_GetDeviceName},
+    {"ResetDevice", syscalls_ResetDevice},
+    {"StopDevice", syscalls_StopDevice},
+    {"GetConnectionStatus", syscalls_GetConnectionStatus},
+    /* statistic funcs */
     {"GetTXPacketCount", syscalls_GetTXPacketCount},
     {"GetRXPacketCount", syscalls_GetRXPacketCount},
-    {"GetTXByteCount",   syscalls_GetTXByteCount},
-    {"GetRXByteCount",   syscalls_GetRXByteCount},
-    {"GetConnectionStatus", syscalls_GetConnectionStatus},
+    {"GetTXByteCount", syscalls_GetTXByteCount},
+    {"GetRXByteCount", syscalls_GetRXByteCount},
+    {"GetTXErrorPacketCount", syscalls_GetTXErrorPacketCount},
+    {"GetTXDropPacketCount", syscalls_GetTXDropPacketCount},
+    {"GetTXMissPacketCount", syscalls_GetTXMissPacketCount},
+    {"GetRXErrorPacketCount", syscalls_GetRXErrorPacketCount},
+    {"GetRXDropPacketCount", syscalls_GetRXDropPacketCount},
+    {"GetRXMissPacketCount", syscalls_GetRXMissPacketCount},
+    {"IPv4ReadPacketSend", syscalls_IPv4ReadPacketSend},
+    {"IPv4ReadPacketReceive", syscalls_IPv4ReadPacketReceive},
+    {"ICMPReadPacketSend", syscalls_ICMPReadPacketSend},
+    {"ICMPReadPacketReceive", syscalls_ICMPReadPacketReceive},
+    {"UDPReadPacketSend", syscalls_UDPReadPacketSend},
+    {"UDPReadPacketReceive", syscalls_UDPReadPacketReceive},
+    {"TCPReadPacketSend", syscalls_TCPReadPacketSend},
+    {"TCPReadPacketReceive", syscalls_TCPReadPacketReceive},
+    {"ARPReadPacketSend", syscalls_ARPReadPacketSend},
+    {"ARPReadPacketReceive", syscalls_ARPReadPacketReceive},
+    {"ReadIPv4Address", syscalls_ReadIPv4Address},
+    {"SetIPv4Address", syscalls_SetIPv4Address},
+    {"ReadIPv4DNSAddress", syscalls_ReadIPv4DNSAddress},
+    {"SetIPv4DNSAddress", syscalls_SetIPv4DNSAddress},
+    {"ReadIPv4SubnetMask", syscalls_ReadIPv4SubnetMask},
+    {"SetIPv4SubnetMask", syscalls_SetIPv4SubnetMask},
+    {"ReadIPv4Gateway", syscalls_ReadIPv4Gateway},
+    {"SetIPv4Gateway", syscalls_SetIPv4Gateway},
+    {"ReadARPEntries", syscalls_ReadARPEntries},
+    {"RemoveARPEntry", syscalls_RemoveARPEntry},
+    {"AddARPEntry", syscalls_AddARPEntry},
+    {"SendARPAnnounce", syscalls_SendARPAnnounce},
+    {"ReadARPConflicts", syscalls_ReadARPConflicts},
+    /* Socket funcs */
+    {"OpenSocket", syscalls_OpenSocket},
+    {"CloseSocket", syscalls_CloseSocket},
+    {"Bind", syscalls_Bind},
+    {"Listen", syscalls_Listen},
+    {"Connect", syscalls_Connect},
+    {"Accept", syscalls_Accept},
+    {"Send", syscalls_Send},
+    {"Receive", syscalls_Receive},
+    {"GetSocketOptions", syscalls_GetSocketOptions},
+    {"GetPairSocket", syscalls_GetPairSocket},
     {NULL, NULL}};
 
 static inline void syscalls_push_events(lua_State *L)

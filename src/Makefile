@@ -107,6 +107,9 @@ $(LUA_T_S): $(LUA_O) $(LUA_S)
 
 static: $(ALL_T)
 
+static-with-syscalls:
+	make "MYCFLAGS=$(MYCFLAGS) -DLUA_ENABLE_SYSCALLS" "LIB_O=$(LIB_O) lsyscalls.o" static
+
 shared: 
 	make "ARFLAGS=crs" "LUA_T_S=lua" "LUA_T=" lua
 	make "LUAC_T=luac" luac

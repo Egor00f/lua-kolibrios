@@ -46,7 +46,7 @@ V= 5.4
 R= $V.7
 
 
-shared static syscalls.dll help test:
+shared static static-with-syscalls syscalls.dll help test:
 	@cd src && $(MAKE) $@ 
 
 install: dummy

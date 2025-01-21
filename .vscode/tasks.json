@@ -41,7 +41,7 @@
 			"type": "shell",
 			"label": "Build syscalls",
 			"detail": "Build syscals library",
-			"command": "make -C ${workspaceFolder} syscalls.dll",
+			"command": "-C ${workspaceFolder} syscalls.dll",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -51,7 +51,7 @@
 			},
 			"options": {
 				"shell": {
-					"executable": "cmd"
+					"executable": "make"
 				}
 			}
 		},
