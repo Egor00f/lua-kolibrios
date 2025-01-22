@@ -72,7 +72,7 @@ inline void syscalls_ReturnTrueOrNil(LUA_INTEGER value, lua_State *L)
 
 inline void syscalls_ReturnStringOrNil(LUA_INTEGER cond, const char *value, lua_State *L)
 {
-    if (value == -1)
+    if (cond == -1)
     {
         lua_pushnil(L);
     }
@@ -509,7 +509,7 @@ static int syscalls_drawLine(lua_State *L)
 
 enum TextScale
 {
-    TextScale_SIZE_6x9 = 1,    // 1x 6x9
+    TextScale_SIZE_6x9,    // 1x 6x9
     TextScale_SIZE_8x16,   // 1x 8x16
     TextScale_SIZE_12x18,  // 2x 6x9
     TextScale_SIZE_16x32,  // 2x 8x16
@@ -524,7 +524,7 @@ enum TextScale
     TextScale_SIZE_48x72,  // 8x 6x9
     TextScale_SIZE_48x96,  // 6x 8x16
     TextScale_SIZE_56x112, // 7x 8x16
-    TextScale_SIZE_64x128   // 8x 8x16
+    TextScale_SIZE_64x128  // 8x 8x16
 };
 
 static void syscall_drawText(const char *text, uint32_t x, uint32_t y, ksys_color_t color, enum TextScale size, uint32_t len, bool fillBackground, ksys_color_t backgroundColor)
@@ -604,7 +604,7 @@ static void syscall_drawText(const char *text, uint32_t x, uint32_t y, ksys_colo
         break;
     };
 
-    if (len > 0)
+    if (len <= 0)
         color |= (1 << 31);
 
     asm_inline(
@@ -1215,7 +1215,7 @@ static int syscalls_ResetDevice(lua_State *L)
 static int syscalls_StopDevice(lua_State *L)
 {
     uint32_t ret = 0;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
@@ -1230,7 +1230,7 @@ static int syscalls_StopDevice(lua_State *L)
 static int syscalls_GetTXPacketCount(lua_State *L)
 {
     uint32_t num;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
@@ -1435,7 +1435,7 @@ static int syscalls_GetConnectionStatus(lua_State *L)
 static int syscalls_ReadMAC(lua_State *L)
 {
     uint32_t eax, ebx;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
@@ -1668,6 +1668,76 @@ struct ARP_entry
     uint16_t TTL;
 };
 
+static int syscalls_newARPEntry(lua_State *L)
+{
+    uint32_t IP = luaL_checkinteger(L, 1);
+    const char* MAC = luaL_checkstring(L, 2);
+    uint16_t Status = luaL_checkinteger(L, 3);
+    uint16_t TTL = luaL_checkinteger(L, 4);
+
+    size_t size = sizeof(struct ARP_entry);
+    struct ARP_entry* entry = lua_newuserdata(L, size);
+
+    entry->IP = IP;
+    memcpy(entry->MAC, MAC, 6);
+    entry->Status = Status;
+    entry->TTL = TTL;
+
+    return 1;
+}
+
+static int syscalls_indexARPEntry(lua_State *L)
+{
+    struct ARP_entry *entry = (struct ARP_entry *)lua_touserdata(L, 1);
+
+    const char* index = luaL_checkstring(L, 2);
+
+    if(strcmp(index, "IP"))
+        lua_pushinteger(L, entry->IP);
+    else if(strcmp(index, "MAC"))
+    {
+        char str[7];
+        strcpy(str, entry->MAC);
+        str[6] = '\n';
+        lua_pushstring(L, str);
+    }
+    else if(strcmp(index, "Status"))
+        lua_pushinteger(L, entry->Status);
+    else if(strcmp(index, "TTL"))
+        lua_pushinteger(L, entry->TTL);
+    else
+        lua_pushfail(L);
+
+    return 1;
+}
+
+static int syscalls_newindexARPEntry(lua_State *L)
+{
+    struct ARP_entry *entry = (struct ARP_entry *)lua_touserdata(L, 1);
+
+    const char* index = luaL_checkstring(L, 2);
+
+    if(strcmp(index, "IP"))
+        entry->IP = luaL_checkinteger(L, 3);
+    else if(strcmp(index, "MAC"))
+        strcpy(entry->MAC, luaL_checkstring(L, 3));
+    else if(strcmp(index, "Status"))
+        entry->Status = luaL_checkinteger(L, 3);
+    else if(strcmp(index, "TTL"))
+        entry->TTL = luaL_checkinteger(L, 3);
+    else
+        lua_pushfail(L);
+
+    return 1;
+}
+
+static const luaL_Reg ARPEntry_lib[] = {
+    {"new", syscalls_newARPEntry},
+    {"__index", syscalls_indexARPEntry},
+    {"__newindex", syscalls_newindexARPEntry},
+    {NULL, NULL}
+};
+
 static int syscalls_ARPReadPacketSend(lua_State *L)
 {
     return syscalls_ReadPacketSend(L, ARP);
@@ -1681,7 +1751,7 @@ static int syscalls_ARPReadPacketReceive(lua_State *L)
 static int syscalls_ReadARPEntries(lua_State *L)
 {
     uint32_t eax;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
@@ -1696,7 +1766,7 @@ static int syscalls_ReadARPEntries(lua_State *L)
 static int syscalls_ReadARPEntry(lua_State *L)
 {
     uint32_t eax;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
     uint32_t entryNum = luaL_checkinteger(L, 2);
     struct ARP_entry* buffer;
 
@@ -1713,9 +1783,9 @@ static int syscalls_ReadARPEntry(lua_State *L)
 static int syscalls_AddARPEntry(lua_State *L)
 {
     uint32_t eax;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
     uint32_t entryNum = luaL_checkinteger(L, 2);
-    struct ARP_entry *buffer = (struct ARP_entry *)luaL_checkinteger(L, 3);
+    struct ARP_entry *buffer = (struct ARP_entry *)lua_touserdata(L, 3);
 
     asm_inline(
         "int $0x40"
@@ -1730,7 +1800,7 @@ static int syscalls_AddARPEntry(lua_State *L)
 static int syscalls_RemoveARPEntry(lua_State *L)
 {
     uint32_t eax;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
     uint32_t entryNum = luaL_checkinteger(L, 2);
 
     asm_inline(
@@ -1746,7 +1816,7 @@ static int syscalls_RemoveARPEntry(lua_State *L)
 static int syscalls_SendARPAnnounce(lua_State *L)
 {
     uint32_t eax;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
@@ -1761,7 +1831,7 @@ static int syscalls_SendARPAnnounce(lua_State *L)
 static int syscalls_ReadARPConflicts(lua_State *L)
 {
     uint32_t eax;
-    uint32_t device = luaL_checkinteger(L, 1);
+    uint8_t device = luaL_checkinteger(L, 1);
 
     asm_inline(
         "int $0x40"
@@ -1977,6 +2047,7 @@ static int syscalls_GetPairSocket(lua_State *L)
     return 2;
 }
 
+
 /*
 ** functions for 'syscalls' library
 */
@@ -2062,6 +2133,7 @@ static const luaL_Reg syscallsLib[] = {
     {"ResetDevice", syscalls_ResetDevice},
     {"StopDevice", syscalls_StopDevice},
     {"GetConnectionStatus", syscalls_GetConnectionStatus},
+    {"ReadMAC", syscalls_ReadMAC},
     /* statistic funcs */
     {"GetTXPacketCount", syscalls_GetTXPacketCount},
     {"GetRXPacketCount", syscalls_GetRXPacketCount},
@@ -2092,6 +2164,7 @@ static const luaL_Reg syscallsLib[] = {
     {"ReadIPv4Gateway", syscalls_ReadIPv4Gateway},
     {"SetIPv4Gateway", syscalls_SetIPv4Gateway},
     {"ReadARPEntries", syscalls_ReadARPEntries},
+    {"ReadARPEntry", syscalls_ReadARPEntry},
     {"RemoveARPEntry", syscalls_RemoveARPEntry},
     {"AddARPEntry", syscalls_AddARPEntry},
     {"SendARPAnnounce", syscalls_SendARPAnnounce},
@@ -2521,6 +2594,57 @@ static inline void syscalls_push_connectionStatus(lua_State *L)
 
 }
 
+inline void syscalls_push_textSizes(lua_State *L)
+{
+    lua_pushnumber(L, TextScale_SIZE_6x9);
+    lua_setfield(L, -2, "TextSize_6x9");
+
+    lua_pushnumber(L, TextScale_SIZE_8x16);
+    lua_setfield(L, -2, "TextSize_8x16");
+
+    lua_pushnumber(L, TextScale_SIZE_12x18);
+    lua_setfield(L, -2, "TextSize_12x18");
+
+    lua_pushnumber(L, TextScale_SIZE_16x32);
+    lua_setfield(L, -2, "TextSize_16x32");
+
+    lua_pushnumber(L, TextScale_SIZE_18x27);
+    lua_setfield(L, -2, "TextSize_18x27");
+
+    lua_pushnumber(L, TextScale_SIZE_24x36);
+    lua_setfield(L, -2, "TextSize_24x36");
+
+    lua_pushnumber(L, TextScale_SIZE_24x48);
+    lua_setfield(L, -2, "TextSize_24x48");
+
+    lua_pushnumber(L, TextScale_SIZE_30x45);
+    lua_setfield(L, -2, "TextSize_30x45");
+
+    lua_pushnumber(L, TextScale_SIZE_32x64);
+    lua_setfield(L, -2, "TextSize_32x64");
+
+    lua_pushnumber(L, TextScale_SIZE_36x54);
+    lua_setfield(L, -2, "TextSize_36x54");
+
+    lua_pushnumber(L, TextScale_SIZE_40x80);
+    lua_setfield(L, -2, "TextSize_40x80");
+
+    lua_pushnumber(L, TextScale_SIZE_42x63);
+    lua_setfield(L, -2, "TextSize_42x63");
+
+    lua_pushnumber(L, TextScale_SIZE_48x72);
+    lua_setfield(L, -2, "TextSize_48x72");
+
+    lua_pushnumber(L, TextScale_SIZE_48x96);
+    lua_setfield(L, -2, "TextSize_48x96");
+
+    lua_pushnumber(L, TextScale_SIZE_56x112);
+    lua_setfield(L, -2, "TextSize_56x112");
+
+    lua_pushnumber(L, TextScale_SIZE_64x128);
+    lua_setfield(L, -2, "TextSize_64x128");
+}
+
 LUALIB_API int luaopen_syscalls(lua_State *L)
 {
     luaL_newlib(L, syscallsLib);
@@ -2533,6 +2657,7 @@ LUALIB_API int luaopen_syscalls(lua_State *L)
     syscalls_push_windowStyles(L);
     syscalls_push_buttons(L);
     syscalls_push_connectionStatus(L);
+    syscalls_push_textSizes(L);
 
     _ksys_set_event_mask(7); // set default event mask
 

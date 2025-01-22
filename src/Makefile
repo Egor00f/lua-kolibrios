@@ -65,12 +65,12 @@ LUAC_O=	luac.o
 
 
 LUA_S = lua54.dll
-
+LUA_S_IMP = $(LUA_S).a
 
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O) lsyscalls.o
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
-ALL_S= $(LUA_S) $(LUA_S) syscalls.dll
+ALL_S= $(LUA_S) $(LUA_S) $(LUA_S_IMP) syscalls.dll
 
 default: shared $(LUA_A) syscalls.dll
 
@@ -96,7 +96,7 @@ $(LUAC_T): $(LUAC_O) $(LUA_A)
 
 # Shared lib
 $(LUA_S): $(BASE_O)
-	$(LD) -shared -T dll.lds --entry _DllStartup -o $@ $(BASE_O) $(LIBS) --out-implib $@.a
+	$(LD) -shared -T dll.lds --entry _DllStartup -o $@ $(BASE_O) $(LIBS) --out-implib $(LUA_S_IMP)
 
 
 # shared lua
@@ -121,7 +121,7 @@ test:
 	./$(LUA_T) -v
 
 clean:
-	$(RM) $(ALL_T) $(ALL_O) $(ALL_S)
+	$(RM) $(ALL_T) $(ALL_O) $(ALL_S) 
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c
