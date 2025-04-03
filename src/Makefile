@@ -6,18 +6,33 @@
 # Your platform. See PLATS for possible values.
 PLAT= none
 
-CC= gcc -std=gnu99
-CFLAGS= -O2 -Wall -Wextra -DLUA_COMPAT_5_2 $(SYSCFLAGS) $(MYCFLAGS)
-LDFLAGS= $(SYSLDFLAGS) $(MYLDFLAGS)
-LIBS= -lm $(SYSLIBS) $(MYLIBS)
+CC=kos32-gcc
+LD=kos32-ld
+STRIP=kos32-strip
+OBJCOPY=kos32-objcopy
+STD=-std=gnu99
+CFLAGS=$(SYSCFLAGS) -O2 -Wall -Wextra -DLUA_COMPAT_5_2 $(STD) $(MYCFLAGS)
+LDFLAGS=$(SYSLDFLAGS) $(MYLDFLAGS)
+LIBS=$(SYSLIBS) $(MYLIBS)
 
-AR= ar rcu
+AR_FLAGS=rcu
+AR= ar $(AR_FLAGS)
 RANLIB= ranlib
 RM= rm -f
 
-SYSCFLAGS=
-SYSLDFLAGS=
-SYSLIBS=
+ifeq ($(OS),Windows_NT)
+	TOOLCHAIN_PATH=C:/MinGW/msys/1.0/home/autobuild/tools/win32
+else
+	TOOLCHAIN_PATH=/home/autobuild/tools/win32
+endif
+
+KOLIBRIOS_REPO=../../kolibrios
+
+SDK_DIR=$(KOLIBRIOS_REPO)/contrib/sdk
+NewLib_DIR=$(SDK_DIR)/sources/newlib
+SYSCFLAGS=-fno-ident -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -I$(NewLib_DIR)/libc/include -I$(TOOLCHAIN_PATH)/include
+SYSLDFLAGS=--image-base 0 -Tapp-dynamic.lds
+SYSLIBS=-nostdlib -L $(SDK_DIR)/lib -L$(TOOLCHAIN_PATH)/lib -L$(TOOLCHAIN_PATH)/mingw32/lib -lgcc -lc.dll -ldll
 
 MYCFLAGS=
 MYLDFLAGS=
@@ -26,7 +41,7 @@ MYOBJS=
 
 # == END OF USER SETTINGS -- NO NEED TO CHANGE ANYTHING BELOW THIS LINE =======
 
-PLATS= aix bsd c89 freebsd generic linux macosx mingw posix solaris
+PLATS= shared static
 
 LUA_A=	liblua.a
 CORE_O=	lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o \
@@ -42,9 +57,13 @@ LUA_O=	lua.o
 LUAC_T=	luac
 LUAC_O=	luac.o
 
+LUA_S = lua54.dll
+LUA_S_IMP = $(LUA_S).a
+
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
+ALL_S= $(LUA_S) $(LUA_S) $(LUA_S_IMP)
 
 # Targets start here.
 default: $(PLAT)
@@ -57,13 +76,33 @@ a:	$(ALL_A)
 
 $(LUA_A): $(BASE_O)
 	$(AR) $@ $(BASE_O)
-	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(LUA_A)
-	$(CC) -o $@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
+	$(LD) -o $@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
+	$(STRIP) -S $@
+	$(OBJCOPY) $@ -O binary
 
 $(LUAC_T): $(LUAC_O) $(LUA_A)
-	$(CC) -o $@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
+	$(LD) -o $@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
+	$(STRIP) -S $@
+	$(OBJCOPY) $@ -O binary
+
+# Shared lib
+$(LUA_S): $(BASE_O)
+	$(LD) -shared -T dll.lds --entry _DllStartup -o $@ $(BASE_O) $(LIBS) --out-implib $(LUA_S_IMP)
+
+
+# shared lua
+$(LUA_T_S): $(LUA_O) $(LUA_S)
+	$(LD) -s $(LDFLAGS) -o $@ $(LUA_O) $(LUA_S) $(LIBS) 
+	$(STRIP) -S $@
+	$(OBJCOPY) $@ -O binary
+
+static: $(ALL_T)
+
+shared: 
+	make "ARFLAGS=crs" "LUA_T_S=lua" "LUA_T=" lua
+	make "LUAC_T=luac" luac
 
 clean:
 	$(RM) $(ALL_T) $(ALL_O)
@@ -100,29 +139,6 @@ c89:
 	@echo '*** C89 does not guarantee 64-bit integers for Lua.'
 	@echo ''
 
-
-freebsd:
-	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_LINUX -I/usr/include/edit" SYSLIBS="-Wl,-E -ledit" CC="cc"
-
-generic: $(ALL)
-
-linux:
-	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_LINUX" SYSLIBS="-Wl,-E -ldl -lreadline"
-
-macosx:
-	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_MACOSX" SYSLIBS="-lreadline"
-
-mingw:
-	$(MAKE) "LUA_A=lua53.dll" "LUA_T=lua.exe" \
-	"AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
-	"SYSCFLAGS=-DLUA_BUILD_AS_DLL" "SYSLIBS=" "SYSLDFLAGS=-s" lua.exe
-	$(MAKE) "LUAC_T=luac.exe" luac.exe
-
-posix:
-	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_POSIX"
-
-solaris:
-	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN -D_REENTRANT" SYSLIBS="-ldl"
 
 # list targets that do not create files (but not all makes understand .PHONY)
 .PHONY: all $(PLATS) default o a clean depend echo none
