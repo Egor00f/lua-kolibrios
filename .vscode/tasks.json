@@ -5,70 +5,61 @@
 			"type": "shell",
 			"label": "Build shared lua",
 			"detail": "Build lua shared",
-			"command": "-C ${workspaceFolder} shared",
+			"command": "make -C ${workspaceFolder} shared && exit",
 			"problemMatcher": [
 				"$gcc"
 			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			},
-			"options": {
-				"shell": {
-					"executable": "make"
-				}
 			}
 		},
 		{
 			"type": "shell",
 			"label": "Build static lua",
 			"detail": "Build lua shared",
-			"command": "-C ${workspaceFolder} static",
+			"command": "make -C ${workspaceFolder} static && exit",
 			"problemMatcher": [
 				"$gcc"
 			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			},
-			"options": {
-				"shell": {
-					"executable": "make"
-				}
 			}
 		},
 		{
 			"type": "shell",
 			"label": "Build syscalls",
 			"detail": "Build syscals library",
-			"command": "-C ${workspaceFolder} syscalls.dll",
+			"command": "make -C ${workspaceFolder} syscalls.dll && exit",
 			"problemMatcher": [
 				"$gcc"
 			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			},
-			"options": {
-				"shell": {
-					"executable": "make"
-				}
 			}
 		},
 		{
 			"type": "shell",
 			"label": "Clean",
 			"detail": "Clean build",
-			"command": "-C ${workspaceFolder} clean",
+			"command": "make -C ${workspaceFolder} clean && exit",
 			"group": {
 				"kind": "build",
-				"isDefault": true
-			},
-			"options": {
-				"shell": {
-					"executable": "make"
-				}
+				"isDefault": false
 			}
+		},
+		
+	],
+	"windows": {
+		"options": {
+			"shell": {
+				"executable": "cmd",
+				"args": [
+					"/k",
+				],
+			},
 		}
-	]
+	}
 }

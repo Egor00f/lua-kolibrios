@@ -12,7 +12,7 @@ LD=kos32-ld
 STRIP=kos32-strip
 OBJCOPY=kos32-objcopy
 STD=-std=gnu99
-CFLAGS=$(SYSCFLAGS) -O2 -Wall -Wextra -DLUA_COMPAT_5_3 $(STD) $(MYCFLAGS)
+CFLAGS=$(SYSCFLAGS) -O2 -Wall -Wextra -DLUA_COMPAT_5_3 $(STD) $(MYCFLAGS) -I$(abspath .)
 LDFLAGS=$(SYSLDFLAGS) $(MYLDFLAGS)
 LIBS=$(SYSLIBS) $(MYLIBS)
 
@@ -67,10 +67,12 @@ LUAC_O=	luac.o
 LUA_S = lua54.dll
 LUA_S_IMP = $(LUA_S).a
 
-ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O) lsyscalls.o
+ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O) $(SYSCALLS_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
 ALL_S= $(LUA_S) $(LUA_S) $(LUA_S_IMP) syscalls.dll
+
+SYSCALLS_O= syscalls/syscalls.o syscalls/ARP_entry.o syscalls/systemColors.o
 
 default: shared $(LUA_A) syscalls.dll
 
@@ -108,14 +110,14 @@ $(LUA_T_S): $(LUA_O) $(LUA_S)
 static: $(ALL_T)
 
 static-with-syscalls:
-	make "MYCFLAGS=$(MYCFLAGS) -DLUA_ENABLE_SYSCALLS" "LIB_O=$(LIB_O) lsyscalls.o" static
+	make "MYCFLAGS=$(MYCFLAGS) -DLUA_ENABLE_SYSCALLS" "LIB_O=$(LIB_O) $(SYSCALLS_O)" static
 
 shared: 
 	make "ARFLAGS=crs" "LUA_T_S=lua" "LUA_T=" lua
 	make "LUAC_T=luac" luac
 
-syscalls.dll: lsyscalls.o $(LUA_S)
-	$(CC) -shared -T dll.lds --entry _DllStartup -o $@ lsyscalls.o $(LUA_S) $(SYSLIBS)
+syscalls.dll: $(SYSCALLS_O) $(LUA_S)
+	$(CC) -shared -T dll.lds --entry _DllStartup -o $@ $(SYSCALLS_O) $(LUA_S) $(LIBS)
 
 test:
 	./$(LUA_T) -v
@@ -236,6 +238,9 @@ lvm.o: lvm.c lprefix.h lua.h luaconf.h ldebug.h lstate.h lobject.h \
  ltable.h lvm.h ljumptab.h
 lzio.o: lzio.c lprefix.h lua.h luaconf.h llimits.h lmem.h lstate.h \
  lobject.h ltm.h lzio.h
-lsyscalls.o: lsyscalls.c lua.h lualib.h lauxlib.h
+
+syscalls/syscalls.o: syscalls/syscalls.c lua.h lualib.h lauxlib.h
+syscalls/ARP_entry.o: syscalls/ARP_entry.c syscalls/ARP_entry.h lua.h lualib.h lauxlib.h
+syscalls/systemColors.o: syscalls/systemColors.c lua.h lualib.h lauxlib.h
 
 # (end of Makefile)
