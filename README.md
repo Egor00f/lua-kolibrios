@@ -1,5 +1,7 @@
 [![Build](https://github.com/Egor00f/lua-kolibrios/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Egor00f/lua-kolibrios/actions/workflows/build.yml)
 
+moved to [kolibrios gitea](https://git.kolibrios.org/Lua/Lua)
+
 This is port for KolibriOS of Lua 5.4.7
 
 For installation instructions, license details, and
